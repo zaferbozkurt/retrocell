@@ -646,7 +646,8 @@ function JiraNoteCard({ note }: { note: JiraNote }) {
   const [dragging, setDragging] = useState(false);
 
   const onDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.effectAllowed = "copy";
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData(
       JIRA_NOTE_MIME,
       JSON.stringify({
@@ -654,6 +655,8 @@ function JiraNoteCard({ note }: { note: JiraNote }) {
         title: note.title,
       }),
     );
+    // Some browsers refuse to start a drag if no plain payload is set.
+    e.dataTransfer.setData("text/plain", `[${note.key}] ${note.title}`);
     setDragging(true);
   };
 
@@ -663,7 +666,7 @@ function JiraNoteCard({ note }: { note: JiraNote }) {
       onDragStart={onDragStart}
       onDragEnd={() => setDragging(false)}
       className={cn(
-        "cursor-grab rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 active:cursor-grabbing",
+        "cursor-grab select-none rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 active:cursor-grabbing",
         dragging && "opacity-50",
       )}
     >
@@ -712,13 +715,13 @@ function BoardColumn({
   const acceptsNotes = column !== "action";
 
   const onDragOver = (e: React.DragEvent) => {
-    const types = e.dataTransfer.types;
+    const types = Array.from(e.dataTransfer.types);
     const hasItem = types.includes(ITEM_MIME);
     const hasNote = types.includes(NOTE_MIME);
     const hasJira = types.includes(JIRA_NOTE_MIME);
     if (!hasItem && (!(hasNote || hasJira) || !acceptsNotes)) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = hasItem ? "move" : "copy";
+    e.dataTransfer.dropEffect = "move";
     if (!dragOver) setDragOver(true);
   };
 
