@@ -24,10 +24,8 @@ import {
 } from "@/lib/store";
 import {
   COLUMN_META,
-  JIRA_STATUS_META,
   type Action,
   type Column,
-  type JiraStatus,
   type RetroItem,
   type SprintNote,
   type Team,
@@ -551,62 +549,48 @@ function Board({
 type JiraNote = {
   key: string;
   title: string;
-  status: JiraStatus;
   syncedAt: string;
-  assignee?: string;
 };
 
 const MOCK_JIRA_NOTES: JiraNote[] = [
   {
     key: "PIXEL-04",
     title: "Sprint planning agenda template",
-    status: "done",
     syncedAt: "2026-05-08T09:12:00.000Z",
-    assignee: "Samet",
   },
   {
     key: "PIXEL-19",
     title: "Deploy timeout alert (>2h)",
-    status: "in_progress",
     syncedAt: "2026-05-13T11:30:00.000Z",
-    assignee: "Umutcan",
   },
   {
     key: "PIXEL-27",
     title: "PR otomatik atama botu",
-    status: "ready_to_test",
     syncedAt: "2026-05-12T14:45:00.000Z",
-    assignee: "Zafer",
   },
   {
     key: "PIXEL-31",
     title: "Daily standup recap özet maili",
-    status: "todo",
     syncedAt: "2026-05-14T08:05:00.000Z",
-    assignee: "Nisan",
   },
   {
     key: "PIXEL-33",
     title: "QA ortamı seed reset cron",
-    status: "todo",
     syncedAt: "2026-05-14T08:40:00.000Z",
-    assignee: "Samet",
   },
 ];
 
 function AiNotesColumn({ actions }: { actions: Action[] }) {
-  // "Auto-fed from Jira": every action that has a jiraKey shows up here as a
-  // synced Jira issue. The user perceives this as a real-time Jira sync.
-  // Static mock notes are merged in to keep the column populated even before
-  // any team action has been linked to Jira.
+  // AI's read of Jira — synced items the assistant believes are worth surfacing
+  // on the retro board. Live items come from actions that already have a Jira
+  // key; static mocks fill the column otherwise.
   const liveNotes = useMemo<JiraNote[]>(
     () =>
       actions
-        .filter((a) => a.jiraKey && a.jiraStatus)
+        .filter((a) => a.jiraKey)
         .map((a) => ({
           key: a.jiraKey as string,
           title: a.title,
-          status: a.jiraStatus as JiraStatus,
           syncedAt: a.createdAt,
         })),
     [actions],
@@ -633,7 +617,7 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
           </span>
         </h3>
         <p className="mt-0.5 text-xs text-slate-500">
-          Jira&apos;dan otomatik senkron · canlı
+          Jira&apos;dan AI&apos;ın tespit ettikleri
         </p>
       </div>
 
@@ -659,7 +643,6 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
 }
 
 function JiraNoteCard({ note }: { note: JiraNote }) {
-  const meta = JIRA_STATUS_META[note.status];
   const [dragging, setDragging] = useState(false);
 
   const onDragStart = (e: React.DragEvent) => {
@@ -669,7 +652,6 @@ function JiraNoteCard({ note }: { note: JiraNote }) {
       JSON.stringify({
         key: note.key,
         title: note.title,
-        status: note.status,
       }),
     );
     setDragging(true);
@@ -685,28 +667,13 @@ function JiraNoteCard({ note }: { note: JiraNote }) {
         dragging && "opacity-50",
       )}
     >
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="font-mono font-semibold text-slate-700">
-          {note.key}
-        </span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-            meta.bg,
-            meta.text,
-          )}
-        >
-          <span className={cn("size-1.5 rounded-full", meta.dot)} />
-          {meta.label}
-        </span>
+      <div className="flex items-center gap-1.5 text-[11px] text-violet-700">
+        <Sparkles className="size-3" />
+        <span className="font-mono font-semibold">{note.key}</span>
       </div>
       <p className="mt-1 text-sm leading-snug text-slate-900">{note.title}</p>
-      <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
-        <span className="inline-flex items-center gap-1">
-          <Sparkles className="size-3 text-violet-500" />
-          {note.assignee ? note.assignee : "AI yakaladı"}
-        </span>
-        <span>{formatRelative(note.syncedAt)}</span>
+      <div className="mt-1.5 text-[11px] text-slate-500">
+        AI tespit etti · {formatRelative(note.syncedAt)}
       </div>
     </div>
   );
