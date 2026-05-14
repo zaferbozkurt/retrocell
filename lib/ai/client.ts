@@ -1,85 +1,48 @@
 "use client";
 
-import type { ActionItem, Member, Retro, RetroItem } from "@/lib/types";
-import type { RetroInsight, SuggestedAction } from "./heuristics";
+import type { RetroItem } from "@/lib/types";
 import {
-  heuristicExtractActions,
-  heuristicInsights,
-  heuristicNudge,
-  heuristicSuggestFromItems,
-  heuristicSummarizeRetro,
+  checkSimilarityMock,
+  checkVaguenessMock,
+  type SimilarityResult,
+  type VaguenessResult,
 } from "./heuristics";
 
-type AiResponse<T> = { source: "model" | "heuristic"; data: T };
+export type AiResult<T> = { source: "local-llm" | "mock"; data: T };
 
 async function callApi<T>(
   task: string,
   body: unknown,
   fallback: () => T,
-): Promise<AiResponse<T>> {
+): Promise<AiResult<T>> {
+  // 3-second timeout so a stalled local LLM doesn't block the UI.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
   try {
     const res = await fetch(`/api/ai/${task}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
     if (!res.ok) throw new Error(`AI ${task} failed: ${res.status}`);
-    const json = (await res.json()) as { source: "model" | "heuristic"; data: T };
-    return json;
+    return (await res.json()) as AiResult<T>;
   } catch {
-    return { source: "heuristic", data: fallback() };
+    clearTimeout(timer);
+    return { source: "mock", data: fallback() };
   }
 }
 
-export async function aiExtractActions(
+export function aiCheckSimilarity(
   text: string,
-  members: Member[],
-): Promise<AiResponse<SuggestedAction[]>> {
-  return callApi("extract-actions", { text, members }, () =>
-    heuristicExtractActions(text, members),
+  pastItems: RetroItem[],
+): Promise<AiResult<SimilarityResult>> {
+  return callApi("similarity", { text, pastItems }, () =>
+    checkSimilarityMock(text, pastItems),
   );
 }
 
-export async function aiSuggestFromItems(
-  items: RetroItem[],
-  members: Member[],
-): Promise<AiResponse<SuggestedAction[]>> {
-  return callApi("suggest-from-items", { items, members }, () =>
-    heuristicSuggestFromItems({ items, members }),
-  );
-}
-
-export async function aiSummarize(
-  retro: Retro,
-  items: RetroItem[],
-  actions: ActionItem[],
-  members: Member[],
-): Promise<AiResponse<string>> {
-  return callApi(
-    "summarize",
-    { retro, items, actions, members },
-    () => heuristicSummarizeRetro({ retro, items, actions, members }),
-  );
-}
-
-export async function aiNudge(
-  action: ActionItem,
-  owner: Member | undefined,
-  retroTitle: string,
-  fromName: string,
-): Promise<AiResponse<string>> {
-  return callApi("nudge", { action, owner, retroTitle, fromName }, () =>
-    heuristicNudge({ action, owner, retroTitle, fromName }),
-  );
-}
-
-export async function aiInsights(
-  retros: Retro[],
-  items: RetroItem[],
-  actions: ActionItem[],
-  members: Member[],
-): Promise<AiResponse<RetroInsight[]>> {
-  return callApi("insights", { retros, items, actions, members }, () =>
-    heuristicInsights({ retros, items, actions, members }),
-  );
+export function aiCheckVagueness(text: string): Promise<AiResult<VaguenessResult>> {
+  return callApi("vagueness", { text }, () => checkVaguenessMock(text));
 }

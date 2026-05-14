@@ -1,130 +1,90 @@
-export type Member = {
-  id: string;
-  name: string;
-  initials: string;
-  color: string;
-  role?: string;
-};
-
-export type ColumnId = "went-well" | "didnt-go-well" | "ideas" | "shoutouts";
+export type Column = "glad" | "sad" | "action";
 
 export const COLUMN_META: Record<
-  ColumnId,
-  { title: string; subtitle: string; accent: string; emoji: string }
+  Column,
+  { title: string; subtitle: string; bg: string; border: string; chip: string; emoji: string }
 > = {
-  "went-well": {
-    title: "Went well",
-    subtitle: "What we want to repeat",
-    accent: "success",
+  glad: {
+    title: "İyi Gitti",
+    subtitle: "Devam ettirelim",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+    chip: "bg-emerald-100 text-emerald-800",
     emoji: "✨",
   },
-  "didnt-go-well": {
-    title: "Didn't go well",
-    subtitle: "What slowed us down",
-    accent: "destructive",
+  sad: {
+    title: "Kötü Gitti",
+    subtitle: "Bizi yavaşlatan şeyler",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    chip: "bg-rose-100 text-rose-800",
     emoji: "⚠️",
   },
-  ideas: {
-    title: "Ideas",
-    subtitle: "What we could try next",
-    accent: "info",
-    emoji: "💡",
-  },
-  shoutouts: {
-    title: "Shoutouts",
-    subtitle: "Who deserves recognition",
-    accent: "warning",
-    emoji: "🎉",
+  action: {
+    title: "Aksiyon",
+    subtitle: "Atılacak somut adımlar",
+    bg: "bg-sky-50",
+    border: "border-sky-200",
+    chip: "bg-sky-100 text-sky-800",
+    emoji: "🎯",
   },
 };
 
-export type RetroStatus = "draft" | "live" | "closed";
+export type RetroStatus = "active" | "closed";
+export type ActionStatus = "open" | "in_progress" | "done";
+
+export const ACTION_STATUS_META: Record<
+  ActionStatus,
+  { label: string; bg: string; text: string }
+> = {
+  open: { label: "Açık", bg: "bg-slate-100", text: "text-slate-700" },
+  in_progress: { label: "Devam", bg: "bg-amber-100", text: "text-amber-800" },
+  done: { label: "Tamamlandı", bg: "bg-emerald-100", text: "text-emerald-800" },
+};
 
 export type Retro = {
   id: string;
-  title: string;
-  sprintLabel?: string;
+  sprintName: string;
+  date: string;
   status: RetroStatus;
-  facilitatorId: string;
-  createdAt: string;
-  closedAt?: string;
   summary?: string;
-  participants: string[]; // member ids
 };
 
 export type RetroItem = {
   id: string;
   retroId: string;
-  columnId: ColumnId;
-  content: string;
-  authorId: string;
-  votes: string[]; // member ids
+  column: Column;
+  text: string;
+  author: string;
   createdAt: string;
-  linkedActionId?: string;
+  similarToItemId?: string;
+  similarReason?: string;
+  isVague?: boolean;
+  vagueQuestion?: string;
 };
 
-export type ActionStatus =
-  | "open"
-  | "in_progress"
-  | "blocked"
-  | "done"
-  | "dropped";
-
-export const ACTION_STATUS_META: Record<
-  ActionStatus,
-  { label: string; tone: "default" | "info" | "warning" | "success" | "destructive" | "secondary" }
-> = {
-  open: { label: "Open", tone: "secondary" },
-  in_progress: { label: "In progress", tone: "info" },
-  blocked: { label: "Blocked", tone: "warning" },
-  done: { label: "Done", tone: "success" },
-  dropped: { label: "Dropped", tone: "destructive" },
-};
-
-export type ActionHistoryEntry = {
-  at: string;
-  type:
-    | "created"
-    | "status"
-    | "owner"
-    | "due"
-    | "comment"
-    | "nudge"
-    | "carried"
-    | "edited";
-  from?: string;
-  to?: string;
-  note?: string;
-  byId?: string;
-};
-
-export type ActionNudge = {
-  at: string;
-  byId: string;
-  message: string;
-};
-
-export type ActionItem = {
+export type Action = {
   id: string;
-  title: string;
-  detail?: string;
-  ownerId: string;
-  dueDate: string; // YYYY-MM-DD
-  status: ActionStatus;
   retroId: string;
-  sourceItemId?: string;
+  title: string;
+  owner: string;
+  status: ActionStatus;
   createdAt: string;
-  updatedAt: string;
-  carriedOverCount: number;
-  history: ActionHistoryEntry[];
-  nudges: ActionNudge[];
+  closedAt?: string;
+};
+
+export type SprintNote = {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+  movedToRetro: boolean;
 };
 
 export type AppState = {
-  currentUserId: string;
-  members: Member[];
+  currentUser: string;
   retros: Retro[];
-  retroItems: RetroItem[];
-  actions: ActionItem[];
-  teamName: string;
+  items: RetroItem[];
+  actions: Action[];
+  notes: SprintNote[];
 };

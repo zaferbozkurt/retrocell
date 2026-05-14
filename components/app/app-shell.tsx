@@ -2,163 +2,93 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BarChart3,
-  Bell,
-  CheckSquare,
-  LayoutDashboard,
-  Lightbulb,
-  RefreshCcw,
-  Repeat,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { MemberAvatar } from "@/components/app/member-avatar";
+import { CheckSquare, ClipboardList, History, RotateCcw } from "lucide-react";
+import { store, useAppState, useHydrateStore } from "@/lib/store";
 import { cn } from "@/lib/cn";
-import {
-  store,
-  useAppState,
-  useHydrateStore,
-} from "@/lib/store";
-import { isOverdue, isStale } from "@/lib/date";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/retros", label: "Retros", icon: Repeat },
-  { href: "/actions", label: "Actions", icon: CheckSquare },
-  { href: "/insights", label: "Insights", icon: BarChart3 },
+  { href: "/", label: "Retro", icon: ClipboardList, match: (p: string) => p === "/" },
+  {
+    href: "/actions",
+    label: "Aksiyonlar",
+    icon: CheckSquare,
+    match: (p: string) => p.startsWith("/actions"),
+  },
+  {
+    href: "/history",
+    label: "Geçmiş",
+    icon: History,
+    match: (p: string) => p.startsWith("/history"),
+  },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useHydrateStore();
   const pathname = usePathname() ?? "/";
-  const teamName = useAppState((s) => s.teamName);
-  const currentUserId = useAppState((s) => s.currentUserId);
-  const members = useAppState((s) => s.members);
-  const actions = useAppState((s) => s.actions);
-  const currentUser = members.find((m) => m.id === currentUserId);
-
-  const openActions = actions.filter(
-    (a) => a.status !== "done" && a.status !== "dropped",
+  const currentUser = useAppState((s) => s.currentUser);
+  const openCount = useAppState(
+    (s) => s.actions.filter((a) => a.status !== "done").length,
   );
-  const myOpen = openActions.filter((a) => a.ownerId === currentUserId);
-  const stalest = openActions.filter(
-    (a) => isOverdue(a.dueDate, a.status) || isStale(a.updatedAt, a.status),
-  ).length;
 
   return (
-    <div className="flex min-h-screen w-full">
-      <aside className="hidden w-64 shrink-0 flex-col gap-1 border-r bg-card px-3 py-5 md:flex">
-        <Link href="/" className="mb-4 flex items-center gap-2 px-3">
-          <span className="inline-flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <RefreshCcw className="size-4" />
-          </span>
-          <span className="text-lg font-semibold tracking-tight">RetroLoop</span>
-        </Link>
-        <div className="mb-2 px-3 text-xs text-muted-foreground">
-          {teamName}
-        </div>
-
-        <nav className="flex flex-1 flex-col gap-1">
-          {NAV.map(({ href, label, icon: Icon }) => {
-            const active =
-              href === "/"
-                ? pathname === "/"
-                : pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  <Icon className="size-4" />
-                  {label}
-                </span>
-                {label === "Actions" && myOpen.length > 0 ? (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                    {myOpen.length}
-                  </Badge>
-                ) : null}
-                {label === "Insights" && stalest > 0 ? (
-                  <Badge variant="warning" className="h-5 px-1.5 text-[10px]">
-                    {stalest}
-                  </Badge>
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="mt-4 rounded-lg border bg-background/60 p-3 text-xs text-muted-foreground">
-          <div className="mb-1 flex items-center gap-1.5 text-foreground">
-            <Lightbulb className="size-3.5" /> The loop
-          </div>
-          <p className="leading-relaxed">
-            Every retro ends with owners and dates. RetroLoop carries unfinished
-            actions to the next retro so nothing falls through.
-          </p>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between border-t pt-3 text-xs">
-          <div className="flex items-center gap-2">
-            <MemberAvatar member={currentUser ?? undefined} size="sm" withTooltip={false} />
-            <div className="leading-tight">
-              <div className="font-medium text-foreground">{currentUser?.name}</div>
-              <div className="text-muted-foreground">{currentUser?.role}</div>
-            </div>
-          </div>
-          <ThemeToggle />
-        </div>
-      </aside>
-
-      <main className="relative flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur md:px-8">
-          <div className="flex items-center gap-2 md:hidden">
-            <span className="inline-flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <RefreshCcw className="size-3.5" />
+    <div className="min-h-screen w-full bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="inline-flex size-8 items-center justify-center rounded-md bg-indigo-600 text-white">
+              <RotateCcw className="size-4" />
             </span>
-            <span className="text-base font-semibold">RetroLoop</span>
-          </div>
+            <span className="text-base font-semibold tracking-tight">Retro Tracker</span>
+          </Link>
 
-          <div className="flex flex-1 items-center justify-end gap-2">
-            {stalest > 0 ? (
-              <Link
-                href="/actions?filter=needs-attention"
-                className="flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-3 py-1 text-xs font-medium text-warning-foreground"
-              >
-                <Bell className="size-3.5" />
-                {stalest} action{stalest === 1 ? "" : "s"} need attention
-              </Link>
-            ) : null}
-            <Button asChild size="sm">
-              <Link href="/retros/new">Start retro</Link>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+          <nav className="flex items-center gap-1">
+            {NAV.map(({ href, label, icon: Icon, match }) => {
+              const active = match(pathname);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                  )}
+                >
+                  <Icon className="size-4" />
+                  <span className="hidden sm:inline">{label}</span>
+                  {label === "Aksiyonlar" && openCount > 0 ? (
+                    <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[11px] font-semibold text-white">
+                      {openCount}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-slate-500 sm:inline">
+              {currentUser} (Scrum Master)
+            </span>
+            <button
               onClick={() => {
                 if (
                   typeof window !== "undefined" &&
-                  window.confirm("Reset all data to the seeded demo state?")
+                  window.confirm("Tüm veriyi seed haline geri al?")
                 ) {
                   store.reset();
                 }
               }}
+              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              title="Demo'yu sıfırla"
             >
-              <RefreshCcw className="size-3.5" />
-              <span className="hidden lg:inline">Reset demo</span>
-            </Button>
+              <RotateCcw className="size-4" />
+            </button>
           </div>
-        </header>
-        <div className="flex-1">{children}</div>
-      </main>
+        </div>
+      </header>
+      <main>{children}</main>
     </div>
   );
 }
