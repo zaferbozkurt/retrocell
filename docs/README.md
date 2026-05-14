@@ -23,7 +23,6 @@ Bu klasör Retro Tracker'ın hackathon dökümantasyonunu içerir. Her dosya bir
 | Kullanılan AI araçları, model bilgileri | [`/README.md`](../README.md) > "Kullanılan AI araçları" + [`AI-STRATEGY.md`](./AI-STRATEGY.md) |
 | Entegre edilen API'ler | [`/README.md`](../README.md) > "Entegre edilen API'ler" |
 | MCP listesi | [`/README.md`](../README.md) > "MCP listesi" (kullanılmadı) |
-| Ekran görüntüleri | [`/README.md`](../README.md) > "Ekran görüntüleri" + `docs/screenshots/` |
 | Deploy URL | [`/README.md`](../README.md) > "Deploy URL" + [`DEPLOY.md`](./DEPLOY.md) |
 | Proje planı | [`PLAN.md`](./PLAN.md) |
 | Geliştirme fazları | [`PHASES.md`](./PHASES.md) |

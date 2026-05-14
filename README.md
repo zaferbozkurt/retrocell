@@ -18,7 +18,6 @@
 - [Kullanılan AI araçları](#kullanılan-ai-araçları)
 - [Entegre edilen API'ler](#entegre-edilen-apiler)
 - [MCP listesi](#mcp-listesi)
-- [Ekran görüntüleri](#ekran-görüntüleri)
 - [Deploy URL](#deploy-url)
 - [Dökümantasyon](#dökümantasyon)
 - [Teknoloji yığını](#teknoloji-yığını)
@@ -154,15 +153,6 @@ AI iş bölümü ve orkestrasyon detayı: [`docs/AI-STRATEGY.md`](./docs/AI-STRA
 ## MCP listesi
 
 **MCP sunucusu kullanılmadı.** Geliştirme tamamen Claude Code'un yerleşik tool seti (Read, Edit, Write, Bash, Grep) ile yürütüldü.
-
-## Ekran görüntüleri
-
-> Hackathon sunumu sırasında doldurulacak. Görseller `docs/screenshots/` altına eklenir.
-
-- `docs/screenshots/board.png` — retro board + sprint notları sidebar
-- `docs/screenshots/ai-warning.png` — yeni kart eklendiğinde AI benzerlik banner'ı
-- `docs/screenshots/actions.png` — aksiyonlar tablosu, 30+ gün vurgusu
-- `docs/screenshots/history.png` — geçmiş retrolar + recurring theme uyarısı
 
 ## Deploy URL
 
