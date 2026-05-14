@@ -42,8 +42,27 @@ export const ACTION_STATUS_META: Record<
   done: { label: "Tamamlandı", bg: "bg-emerald-100", text: "text-emerald-800" },
 };
 
+export type TeamMemberRole = "scrum_master" | "member";
+
+export type Team = {
+  id: string;
+  name: string;
+  inviteCode: string;
+  scrumMasterId: string;
+  createdAt: string;
+};
+
+export type TeamMember = {
+  id: string;
+  teamId: string;
+  name: string;
+  role: TeamMemberRole;
+  joinedAt: string;
+};
+
 export type Retro = {
   id: string;
+  teamId: string;
   sprintName: string;
   date: string;
   status: RetroStatus;
@@ -55,8 +74,9 @@ export type RetroItem = {
   retroId: string;
   column: Column;
   text: string;
-  author: string;
+  authorId: string;
   createdAt: string;
+  revealed: boolean;
   similarToItemId?: string;
   similarReason?: string;
   isVague?: boolean;
@@ -68,7 +88,7 @@ export type Action = {
   id: string;
   retroId: string;
   title: string;
-  owner: string;
+  ownerId: string;
   status: ActionStatus;
   createdAt: string;
   closedAt?: string;
@@ -77,14 +97,18 @@ export type Action = {
 
 export type SprintNote = {
   id: string;
+  teamId: string;
   text: string;
-  author: string;
+  authorId: string;
   createdAt: string;
   movedToRetro: boolean;
 };
 
 export type AppState = {
-  currentUser: string;
+  teams: Team[];
+  members: TeamMember[];
+  currentTeamId: string | null;
+  currentUserId: string | null;
   retros: Retro[];
   items: RetroItem[];
   actions: Action[];

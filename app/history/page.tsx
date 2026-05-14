@@ -1,27 +1,50 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { formatDate } from "@/lib/date";
-import { useAppState } from "@/lib/store";
+import { getCurrentTeam, useAppState } from "@/lib/store";
 import type { Action, Retro, RetroItem } from "@/lib/types";
 
 export default function HistoryPage() {
+  const team = useAppState(getCurrentTeam);
   const retros = useAppState((s) => s.retros);
   const items = useAppState((s) => s.items);
   const actions = useAppState((s) => s.actions);
+  const router = useRouter();
 
-  const closed = retros
+  useEffect(() => {
+    if (!team) router.replace("/");
+  }, [team, router]);
+
+  if (!team) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-16 text-center text-sm text-slate-500">
+        Yönlendiriliyor…
+      </div>
+    );
+  }
+
+  const teamRetros = retros.filter((r) => r.teamId === team.id);
+  const teamRetroIds = new Set(teamRetros.map((r) => r.id));
+  const teamItems = items.filter((i) => teamRetroIds.has(i.retroId));
+  const teamActions = actions.filter((a) => teamRetroIds.has(a.retroId));
+
+  const closed = teamRetros
     .filter((r) => r.status === "closed")
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  const recurring = detectRecurringTheme(items, retros);
+  const recurring = detectRecurringTheme(teamItems, teamRetros);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Geçmiş & İçgörüler</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Geçmiş & İçgörüler
+        </h1>
         <p className="mt-0.5 text-sm text-slate-600">
-          Önceki retrolar ve local AI&apos;nin yakaladığı tekrar eden konular.
+          {team.name} takımının önceki retroları ve tekrar eden konular.
         </p>
       </header>
 
@@ -36,14 +59,20 @@ export default function HistoryPage() {
       ) : null}
 
       <section className="mt-5 grid gap-3 md:grid-cols-2">
-        {closed.map((r) => (
-          <RetroCard
-            key={r.id}
-            retro={r}
-            items={items.filter((i) => i.retroId === r.id)}
-            actions={actions.filter((a) => a.retroId === r.id)}
-          />
-        ))}
+        {closed.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 md:col-span-2">
+            Henüz kapatılmış retro yok.
+          </div>
+        ) : (
+          closed.map((r) => (
+            <RetroCard
+              key={r.id}
+              retro={r}
+              items={teamItems.filter((i) => i.retroId === r.id)}
+              actions={teamActions.filter((a) => a.retroId === r.id)}
+            />
+          ))
+        )}
       </section>
     </div>
   );
@@ -65,12 +94,16 @@ function RetroCard({
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold tracking-tight">{retro.sprintName}</h2>
+        <h2 className="text-base font-semibold tracking-tight">
+          {retro.sprintName}
+        </h2>
         <span className="text-xs text-slate-500">{formatDate(retro.date)}</span>
       </div>
 
       {retro.summary ? (
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">{retro.summary}</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+          {retro.summary}
+        </p>
       ) : null}
 
       <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
@@ -89,8 +122,8 @@ function RetroCard({
             rate >= 70
               ? "h-full bg-emerald-500"
               : rate >= 40
-              ? "h-full bg-amber-500"
-              : "h-full bg-rose-500"
+                ? "h-full bg-amber-500"
+                : "h-full bg-rose-500"
           }
           style={{ width: `${rate}%` }}
         />
@@ -112,22 +145,27 @@ function Mini({
     tone === "good"
       ? "text-emerald-700"
       : tone === "warn"
-      ? "text-amber-700"
-      : tone === "bad"
-      ? "text-rose-700"
-      : "text-slate-900";
+        ? "text-amber-700"
+        : tone === "bad"
+          ? "text-rose-700"
+          : "text-slate-900";
   return (
     <div className="rounded-md bg-slate-50 px-2 py-1.5">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+        {label}
+      </div>
       <div className={`text-sm font-semibold ${color}`}>{value}</div>
     </div>
   );
 }
 
-// Detect a theme that's surfaced in two or more retros — for the demo this
-// will always land on "deploy" via the Sprint 22 & 23 seed data.
-function detectRecurringTheme(items: RetroItem[], retros: Retro[]): string | null {
-  const closedIds = new Set(retros.filter((r) => r.status === "closed").map((r) => r.id));
+function detectRecurringTheme(
+  items: RetroItem[],
+  retros: Retro[],
+): string | null {
+  const closedIds = new Set(
+    retros.filter((r) => r.status === "closed").map((r) => r.id),
+  );
   const negative = items.filter(
     (i) => i.column === "sad" && closedIds.has(i.retroId),
   );
@@ -147,7 +185,9 @@ function detectRecurringTheme(items: RetroItem[], retros: Retro[]): string | nul
   const sprintNames = [...ids]
     .map((id) => retros.find((r) => r.id === id)?.sprintName)
     .filter(Boolean) as string[];
-  return `"${word}" konusu son ${ids.size} retroda konuşuldu (${sprintNames.join(", ")}) ve hâlâ çözülmedi.`;
+  return `"${word}" konusu son ${ids.size} retroda konuşuldu (${sprintNames.join(
+    ", ",
+  )}) ve hâlâ çözülmedi.`;
 }
 
 const STOPWORDS = new Set([

@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ACTION_STATUS_META, type ActionStatus } from "@/lib/types";
 import { daysAgo } from "@/lib/date";
-import { store, useAppState } from "@/lib/store";
+import {
+  getCurrentTeam,
+  isScrumMaster,
+  store,
+  useAppState,
+} from "@/lib/store";
 import { cn } from "@/lib/cn";
 
 type Filter = "all" | "open" | "done";
@@ -15,11 +21,33 @@ const STATUS_CYCLE: Record<ActionStatus, ActionStatus> = {
 };
 
 export default function ActionsPage() {
-  const actions = useAppState((s) => s.actions);
+  const team = useAppState(getCurrentTeam);
+  const sm = useAppState(isScrumMaster);
+  const currentUserId = useAppState((s) => s.currentUserId);
+  const allActions = useAppState((s) => s.actions);
   const retros = useAppState((s) => s.retros);
+  const members = useAppState((s) => s.members);
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
 
-  const filtered = actions
+  useEffect(() => {
+    if (!team) router.replace("/");
+  }, [team, router]);
+
+  if (!team) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-16 text-center text-sm text-slate-500">
+        Yönlendiriliyor…
+      </div>
+    );
+  }
+
+  const teamRetroIds = new Set(
+    retros.filter((r) => r.teamId === team.id).map((r) => r.id),
+  );
+
+  const filtered = allActions
+    .filter((a) => teamRetroIds.has(a.retroId))
     .slice()
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .filter((a) => {
@@ -34,7 +62,7 @@ export default function ActionsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Aksiyonlar</h1>
           <p className="mt-0.5 text-sm text-slate-600">
-            Tüm retrolardan çıkan kararlar tek listede.
+            {team.name} takımının tüm retrolarından çıkan kararlar.
           </p>
         </div>
         <div className="flex gap-1 rounded-md border border-slate-200 bg-white p-1">
@@ -77,29 +105,43 @@ export default function ActionsPage() {
               filtered.map((a) => {
                 const days = daysAgo(a.createdAt);
                 const retro = retros.find((r) => r.id === a.retroId);
+                const owner =
+                  members.find((m) => m.id === a.ownerId)?.name ?? "—";
                 const overdue = a.status !== "done" && days >= 30;
                 const meta = ACTION_STATUS_META[a.status];
+                const canChange = sm || a.ownerId === currentUserId;
                 return (
                   <tr
                     key={a.id}
                     className={cn(
                       "border-l-4",
-                      overdue ? "border-l-rose-500 bg-rose-50/40" : "border-l-transparent",
+                      overdue
+                        ? "border-l-rose-500 bg-rose-50/40"
+                        : "border-l-transparent",
                     )}
                   >
-                    <td className="px-4 py-3 font-medium text-slate-900">{a.title}</td>
-                    <td className="px-4 py-3 text-slate-700">{a.owner}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {a.title}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{owner}</td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={() =>
-                          store.updateActionStatus(a.id, STATUS_CYCLE[a.status])
-                        }
+                        onClick={() => {
+                          if (!canChange) return;
+                          store.updateActionStatus(a.id, STATUS_CYCLE[a.status]);
+                        }}
+                        disabled={!canChange}
                         className={cn(
                           "rounded-full px-2.5 py-0.5 text-[11px] font-medium",
                           meta.bg,
                           meta.text,
+                          !canChange && "cursor-not-allowed opacity-60",
                         )}
-                        title="Durumu değiştirmek için tıkla"
+                        title={
+                          canChange
+                            ? "Durumu değiştirmek için tıkla"
+                            : "Bu aksiyonun sahibi veya scrum master değişiklik yapabilir"
+                        }
                       >
                         {meta.label}
                       </button>
@@ -108,7 +150,9 @@ export default function ActionsPage() {
                       <span
                         className={cn(
                           "text-sm",
-                          overdue ? "font-semibold text-rose-700" : "text-slate-600",
+                          overdue
+                            ? "font-semibold text-rose-700"
+                            : "text-slate-600",
                         )}
                       >
                         {a.status === "done" ? "—" : `${days} gün`}
@@ -126,8 +170,10 @@ export default function ActionsPage() {
       </div>
 
       <p className="mt-3 text-xs text-slate-500">
-        Durum rozetine tıkla &middot; açık → devam → tamamlandı sırasıyla döner. 30+ gündür açık olanlar kırmızı.
+        Durum rozetine tıkla &middot; açık → devam → tamamlandı sırasıyla döner.
+        30+ gündür açık olanlar kırmızı.
       </p>
     </div>
   );
 }
+
