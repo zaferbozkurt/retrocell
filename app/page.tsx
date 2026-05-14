@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, KeyRound, Sparkles, Users } from "lucide-react";
+import { ArrowRight, KeyRound, Users } from "lucide-react";
 import { store, useAppState, useHydrateStore } from "@/lib/store";
 
 export default function LandingPage() {
@@ -20,9 +21,18 @@ export default function LandingPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 md:py-16">
       <div className="text-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
-          <Sparkles className="size-3.5" />
-          Retro Tracker
+        <div className="inline-flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="RetroCell"
+            width={48}
+            height={48}
+            className="size-12 object-contain"
+            priority
+          />
+          <span className="text-2xl font-semibold tracking-tight text-slate-900">
+            RetroCell
+          </span>
         </div>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
           Takımınla retroyu tek panoda topla

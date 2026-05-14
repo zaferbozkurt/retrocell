@@ -4,6 +4,8 @@
 >
 > Prompt Sprint AI Hackathon — **Retro & Action Tracker** konusu için geliştirildi.
 
+🚀 **Canlı demo:** [https://retrocell.vercel.app/](https://retrocell.vercel.app/)
+
 ---
 
 ## İçindekiler
@@ -63,7 +65,9 @@ Detaylı problem analizi: [`docs/PROBLEM.md`](./docs/PROBLEM.md).
 - npm (Node ile birlikte gelir)
 - *İsteğe bağlı:* Yerel [Ollama](https://ollama.com/) (varsayılan model `llama3.2`). Yoksa uygulama mock heuristics ile çalışır.
 
-### Kurulum
+### A) Lokal test (development)
+
+Geliştirme veya kendi makinende denemek için:
 
 ```bash
 git clone https://github.com/<org>/retrocell.git
@@ -73,15 +77,34 @@ cp .env.example .env.local   # opsiyonel — sadece Ollama kullanacaksan
 npm run dev                  # http://localhost:3000
 ```
 
-### Komutlar
+Geliştirme sırasında kullanılacak diğer komutlar:
 
 ```bash
-npm run dev          # next dev (port 3000)
-npm run build        # next build (Turbopack)
-npm run start        # next start (production)
+npm run dev          # next dev (port 3000) — hot reload
 npm run lint         # eslint
-npx tsc --noEmit     # typecheck
+npx tsc --noEmit     # typecheck (test suite yok, bu kontrol birincil)
 ```
+
+### B) Production build — lokal sunucu testi
+
+Canlıya almadan önce production build'in **kendi makinende** çalıştığını doğrulamak için:
+
+```bash
+npm run build        # next build (Turbopack) — production output
+npm run start        # next start (port 3000) — production server
+```
+
+`npm run start` Vercel deploy'unun yaptığının lokal eşdeğeridir. Önce `build` çağırıp sonra `start`'lamalısın.
+
+### C) Canlı sunucu testi (deploy edilmiş)
+
+Herhangi bir kurulum yapmadan direkt jüri demosunu görmek için:
+
+👉 **[https://retrocell.vercel.app/](https://retrocell.vercel.app/)**
+
+Vercel üzerinde host ediliyor. Demo state her tarayıcının kendi `localStorage`'ında tutulur — başka bir kullanıcının verisini görmezsin, kendi `Reset` butonun her zaman seed state'e döndürür.
+
+> **Not:** Canlı sürümde Ollama **yoktur**; AI özellikleri `mock heuristics` ile çalışır. Demo akışı yine deterministik (bkz. `lib/ai/heuristics.ts`).
 
 > Test suite **yoktur** — hackathon kapsamında doğrulama type-check + lint + manuel demo akışı ile yapılır.
 
@@ -143,8 +166,12 @@ AI iş bölümü ve orkestrasyon detayı: [`docs/AI-STRATEGY.md`](./docs/AI-STRA
 
 ## Deploy URL
 
-> Demo lokal çalışır (`npm run dev`). Vercel deploy yapılırsa link buraya eklenecek:
-> **TBD** — `https://retro-tracker.vercel.app`
+🚀 **Canlı:** [https://retrocell.vercel.app/](https://retrocell.vercel.app/)
+
+- **Host:** Vercel
+- **Branch:** `main` push → otomatik deploy
+- **State:** her tarayıcının kendi `localStorage`'ında, backend yok
+- **AI:** canlı sürümde Ollama olmadığından **mock fallback** devrede — demo akışı yine deterministik
 
 ## Dökümantasyon
 
