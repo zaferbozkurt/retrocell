@@ -11,7 +11,12 @@ export const SEED_IDS = {
     zeynep: "u-zeynep",
     can: "u-can",
   },
-  retros: { r1: "retro-1", r2: "retro-2", r3: "retro-3" },
+  retros: {
+    r0: "retro-0",
+    r1: "retro-1",
+    r2: "retro-2",
+    r3: "retro-3",
+  },
   // The "deploy" item from Sprint 22 — AI similarity mock matches against this.
   deployItemId: "i1",
   // The 45-day-old CI/CD action — referenced by the AI reason text.
@@ -23,10 +28,11 @@ export const SEED_IDS = {
 
 export function createSeedState(): AppState {
   const t = todayISO();
+  const r0Date = `${addDays(t, -90)}T10:00:00.000Z`; // Sprint 21 — 90 gün önce
   const r1Date = `${addDays(t, -60)}T10:00:00.000Z`; // Sprint 22 — 60 gün önce
   const r2Date = `${addDays(t, -30)}T10:00:00.000Z`; // Sprint 23 — 30 gün önce
   const r3Date = `${t}T09:00:00.000Z`; // Sprint 24 — bugün
-  const teamCreatedAt = `${addDays(t, -90)}T08:00:00.000Z`;
+  const teamCreatedAt = `${addDays(t, -120)}T08:00:00.000Z`;
 
   return {
     teams: [
@@ -71,6 +77,15 @@ export function createSeedState(): AppState {
     currentTeamId: null,
     currentUserId: null,
     retros: [
+      {
+        id: SEED_IDS.retros.r0,
+        teamId: SEED_IDS.team,
+        sprintName: "Sprint 21",
+        date: r0Date,
+        status: "closed",
+        summary:
+          "Branch stratejisi netleşti, release süreci dokumante edildi. Test coverage hâlâ düşük seviyede.",
+      },
       {
         id: SEED_IDS.retros.r1,
         teamId: SEED_IDS.team,
@@ -291,6 +306,90 @@ export function createSeedState(): AppState {
         status: "open",
         createdAt: `${addDays(t, -32)}T10:00:00.000Z`,
         jiraKey: "PIXEL-19",
+        jiraStatus: "todo",
+      },
+      {
+        id: "a12",
+        retroId: SEED_IDS.retros.r0,
+        title: "Branch stratejisini dokumante et (trunk-based)",
+        ownerId: SEED_IDS.members.zeynep,
+        status: "done",
+        createdAt: r0Date,
+        closedAt: `${addDays(t, -78)}T15:00:00.000Z`,
+        jiraKey: "PIXEL-02",
+        jiraStatus: "done",
+      },
+      {
+        id: "a13",
+        retroId: SEED_IDS.retros.r0,
+        title: "Release süreci runbook'u",
+        ownerId: SEED_IDS.members.mehmet,
+        status: "done",
+        createdAt: `${addDays(t, -88)}T11:00:00.000Z`,
+        closedAt: `${addDays(t, -70)}T17:00:00.000Z`,
+        jiraKey: "PIXEL-03",
+        jiraStatus: "done",
+      },
+      {
+        id: "a14",
+        retroId: SEED_IDS.retros.r0,
+        title: "Test coverage %60'a çıkar",
+        ownerId: SEED_IDS.members.can,
+        status: "in_progress",
+        createdAt: `${addDays(t, -85)}T09:00:00.000Z`,
+        jiraKey: "PIXEL-06",
+        jiraStatus: "in_progress",
+      },
+      {
+        id: "a15",
+        retroId: SEED_IDS.retros.r0,
+        title: "Feature flag servisi entegrasyonu",
+        ownerId: SEED_IDS.members.mehmet,
+        status: "open",
+        createdAt: `${addDays(t, -82)}T10:30:00.000Z`,
+        jiraKey: "PIXEL-07",
+        jiraStatus: "todo",
+      },
+      {
+        id: "a16",
+        retroId: SEED_IDS.retros.r1,
+        title: "Monorepo build script refactor",
+        ownerId: SEED_IDS.members.zeynep,
+        status: "done",
+        createdAt: `${addDays(t, -56)}T13:00:00.000Z`,
+        closedAt: `${addDays(t, -38)}T16:00:00.000Z`,
+        jiraKey: "PIXEL-10",
+        jiraStatus: "done",
+      },
+      {
+        id: "a17",
+        retroId: SEED_IDS.retros.r1,
+        title: "Release notes otomatize et",
+        ownerId: SEED_IDS.members.ayse,
+        status: "done",
+        createdAt: `${addDays(t, -50)}T09:00:00.000Z`,
+        closedAt: `${addDays(t, -36)}T18:00:00.000Z`,
+        jiraKey: "PIXEL-13",
+        jiraStatus: "done",
+      },
+      {
+        id: "a18",
+        retroId: SEED_IDS.retros.r2,
+        title: "Kanban kolon WIP limitleri",
+        ownerId: SEED_IDS.members.ayse,
+        status: "in_progress",
+        createdAt: `${addDays(t, -20)}T10:00:00.000Z`,
+        jiraKey: "PIXEL-22",
+        jiraStatus: "in_progress",
+      },
+      {
+        id: "a19",
+        retroId: SEED_IDS.retros.r2,
+        title: "Tech debt rotation — her sprint 1 madde",
+        ownerId: SEED_IDS.members.can,
+        status: "open",
+        createdAt: `${addDays(t, -18)}T11:00:00.000Z`,
+        jiraKey: "PIXEL-23",
         jiraStatus: "todo",
       },
     ],

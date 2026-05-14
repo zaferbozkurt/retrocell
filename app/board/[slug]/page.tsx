@@ -596,13 +596,25 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
     [actions],
   );
 
+  // Cards the user has already dragged onto a board column disappear so the
+  // column doesn't keep advertising work that's now in the retro.
+  const [consumed, setConsumed] = useState<Set<string>>(() => new Set());
+
   const merged = useMemo<JiraNote[]>(() => {
     const seen = new Set(liveNotes.map((n) => n.key));
     const extras = MOCK_JIRA_NOTES.filter((n) => !seen.has(n.key));
-    return [...liveNotes, ...extras].sort((a, b) =>
-      b.syncedAt.localeCompare(a.syncedAt),
-    );
-  }, [liveNotes]);
+    return [...liveNotes, ...extras]
+      .filter((n) => !consumed.has(n.key))
+      .sort((a, b) => b.syncedAt.localeCompare(a.syncedAt));
+  }, [liveNotes, consumed]);
+
+  const onConsumed = (key: string) =>
+    setConsumed((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
 
   return (
     <section className="flex flex-col rounded-lg border border-violet-200 bg-white">
@@ -627,7 +639,9 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
             Henüz Jira görevi yok.
           </div>
         ) : (
-          merged.map((n) => <JiraNoteCard key={n.key} note={n} />)
+          merged.map((n) => (
+            <JiraNoteCard key={n.key} note={n} onConsumed={onConsumed} />
+          ))
         )}
       </div>
 
@@ -642,7 +656,13 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
   );
 }
 
-function JiraNoteCard({ note }: { note: JiraNote }) {
+function JiraNoteCard({
+  note,
+  onConsumed,
+}: {
+  note: JiraNote;
+  onConsumed: (key: string) => void;
+}) {
   const [dragging, setDragging] = useState(false);
 
   const onDragStart = (e: React.DragEvent) => {
@@ -660,11 +680,18 @@ function JiraNoteCard({ note }: { note: JiraNote }) {
     setDragging(true);
   };
 
+  const onDragEnd = (e: React.DragEvent) => {
+    setDragging(false);
+    if (e.dataTransfer.dropEffect !== "none") {
+      onConsumed(note.key);
+    }
+  };
+
   return (
     <div
       draggable
       onDragStart={onDragStart}
-      onDragEnd={() => setDragging(false)}
+      onDragEnd={onDragEnd}
       className={cn(
         "cursor-grab select-none rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 active:cursor-grabbing",
         dragging && "opacity-50",

@@ -15,7 +15,7 @@ import type {
   TeamMember,
 } from "./types";
 
-const STORAGE_KEY = "retrocell.v1";
+const STORAGE_KEY = "retrocell.v3";
 
 const SEED_SNAPSHOT = createSeedState();
 let state: AppState = SEED_SNAPSHOT;
