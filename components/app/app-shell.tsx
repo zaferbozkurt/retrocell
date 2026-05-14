@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -78,9 +79,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href={team ? `/board/${team.slug}` : "/"}
             className="flex items-center gap-2"
           >
-            <span className="inline-flex size-8 items-center justify-center rounded-md bg-indigo-600 text-white">
-              <RotateCcw className="size-4" />
-            </span>
+            <Image
+              src="/logo.png"
+              alt="RetroCell"
+              width={32}
+              height={32}
+              className="size-8 object-contain"
+              priority
+            />
             <span className="text-base font-semibold tracking-tight">
               RetroCell
             </span>
