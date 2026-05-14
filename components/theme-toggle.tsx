@@ -2,14 +2,20 @@
 
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
+function subscribe() {
+  return () => {};
+}
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
   if (!mounted) {
     return <div className="h-9 w-[108px] rounded-md bg-muted" aria-hidden />;

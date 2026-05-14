@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { AppShell } from "@/components/app/app-shell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pixel Design System",
-  description: "Radix + Tailwind hackathon starter",
+  title: "RetroLoop — close the action-item loop",
+  description:
+    "Run retrospectives that actually move. Carry-forward enforcement, AI nudges, and a personal action inbox so nothing falls through.",
 };
 
 export default function RootLayout({
@@ -31,9 +33,11 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="min-h-full bg-background text-foreground">
         <ThemeProvider>
-          <TooltipProvider delayDuration={150}>{children}</TooltipProvider>
+          <TooltipProvider delayDuration={150}>
+            <AppShell>{children}</AppShell>
+          </TooltipProvider>
           <Toaster />
         </ThemeProvider>
       </body>
