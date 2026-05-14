@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code — local project memory and personal settings
+/.claude/PROJECT_NOTES.md
+/.claude/settings.local.json

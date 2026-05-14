@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckSquare, ClipboardList, History, RotateCcw } from "lucide-react";
+import {
+  CheckSquare,
+  ClipboardList,
+  History,
+  Lock,
+  LogIn,
+  LogOut,
+  RotateCcw,
+} from "lucide-react";
 import { store, useAppState, useHydrateStore } from "@/lib/store";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/lib/firebase/auth-context";
 
 const NAV = [
   { href: "/", label: "Retro", icon: ClipboardList, match: (p: string) => p === "/" },
@@ -20,6 +29,12 @@ const NAV = [
     icon: History,
     match: (p: string) => p.startsWith("/history"),
   },
+  {
+    href: "/korumali",
+    label: "Korumalı",
+    icon: Lock,
+    match: (p: string) => p.startsWith("/korumali"),
+  },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -29,6 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const openCount = useAppState(
     (s) => s.actions.filter((a) => a.status !== "done").length,
   );
+  const { user, loading, signOut } = useAuth();
 
   return (
     <div className="min-h-screen w-full bg-slate-50 text-slate-900">
@@ -71,6 +87,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="hidden text-xs text-slate-500 sm:inline">
               {currentUser} (Scrum Master)
             </span>
+            {!loading &&
+              (user ? (
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="hidden max-w-[10rem] truncate text-xs text-slate-600 md:inline"
+                    title={user.email ?? user.displayName ?? ""}
+                  >
+                    {user.email ?? user.displayName}
+                  </span>
+                  <button
+                    onClick={() => {
+                      void signOut();
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    title="Çıkış yap"
+                  >
+                    <LogOut className="size-3.5" />
+                    <span className="hidden sm:inline">Çıkış</span>
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-700"
+                >
+                  <LogIn className="size-3.5" />
+                  <span>Giriş Yap</span>
+                </Link>
+              ))}
             <button
               onClick={() => {
                 if (
