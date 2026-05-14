@@ -16,6 +16,9 @@ export const SEED_IDS = {
   deployItemId: "i1",
   // The 45-day-old CI/CD action — referenced by the AI reason text.
   ciAction: "a1",
+  // Code-review item that the "tczb" flag matches against. Action a2 originates from it.
+  tczbItemId: "i3",
+  tczbActionId: "a2",
 } as const;
 
 export function createSeedState(): AppState {
@@ -29,8 +32,8 @@ export function createSeedState(): AppState {
     teams: [
       {
         id: SEED_IDS.team,
+        slug: "pixel-squad",
         name: "Pixel Squad",
-        inviteCode: "PIXEL-DEMO",
         scrumMasterId: SEED_IDS.members.ayse,
         createdAt: teamCreatedAt,
       },
@@ -102,7 +105,6 @@ export function createSeedState(): AppState {
         text: "Deploy süreçleri çok yavaş, her release 2 saat sürüyor.",
         authorId: SEED_IDS.members.mehmet,
         createdAt: r1Date,
-        revealed: true,
       },
       {
         id: "i2",
@@ -111,7 +113,6 @@ export function createSeedState(): AppState {
         text: "CI/CD pipeline optimizasyonu yapılacak.",
         authorId: SEED_IDS.members.mehmet,
         createdAt: r1Date,
-        revealed: true,
       },
       {
         id: "i3",
@@ -120,7 +121,6 @@ export function createSeedState(): AppState {
         text: "Code review'lar geç dönüyor.",
         authorId: SEED_IDS.members.zeynep,
         createdAt: r1Date,
-        revealed: true,
       },
       {
         id: "i4",
@@ -129,7 +129,6 @@ export function createSeedState(): AppState {
         text: "Hâlâ deploylar yavaş, CI hatları takılıyor.",
         authorId: SEED_IDS.members.ayse,
         createdAt: r2Date,
-        revealed: true,
         similarToItemId: SEED_IDS.deployItemId,
         similarReason:
           "Aynı konu Sprint 22'de açıldı. CI/CD aksiyonu hâlâ açık (45 gündür).",
@@ -141,7 +140,6 @@ export function createSeedState(): AppState {
         text: "Standup'lar 30 dakikada bitsin.",
         authorId: SEED_IDS.members.can,
         createdAt: r2Date,
-        revealed: true,
       },
       {
         id: "i6",
@@ -150,7 +148,6 @@ export function createSeedState(): AppState {
         text: "Yeni QA ortamı çok hızlı.",
         authorId: SEED_IDS.members.ayse,
         createdAt: r2Date,
-        revealed: true,
       },
       {
         id: "i7",
@@ -159,7 +156,6 @@ export function createSeedState(): AppState {
         text: "Onboarding dökümanı sayesinde yeni üyeler hızlı adapte oldu.",
         authorId: SEED_IDS.members.zeynep,
         createdAt: `${addDays(t, 0)}T09:30:00.000Z`,
-        revealed: false,
       },
       {
         id: "i8",
@@ -168,7 +164,6 @@ export function createSeedState(): AppState {
         text: "Sprint planning toplantısı yine 3 saat sürdü.",
         authorId: SEED_IDS.members.mehmet,
         createdAt: `${addDays(t, 0)}T09:35:00.000Z`,
-        revealed: false,
       },
       {
         id: "i9",
@@ -177,7 +172,6 @@ export function createSeedState(): AppState {
         text: "Bazı PR'lar review beklerken eskidi.",
         authorId: SEED_IDS.members.can,
         createdAt: `${addDays(t, 0)}T09:40:00.000Z`,
-        revealed: false,
       },
     ],
     actions: [
@@ -188,6 +182,9 @@ export function createSeedState(): AppState {
         ownerId: SEED_IDS.members.mehmet,
         status: "open",
         createdAt: `${addDays(t, -45)}T10:00:00.000Z`, // 45 gündür açık
+        sourceItemId: SEED_IDS.deployItemId,
+        jiraKey: "PIXEL-12",
+        jiraStatus: "todo",
       },
       {
         id: "a2",
@@ -197,6 +194,9 @@ export function createSeedState(): AppState {
         status: "done",
         createdAt: r1Date,
         closedAt: `${addDays(t, -40)}T16:00:00.000Z`,
+        sourceItemId: "i3",
+        jiraKey: "PIXEL-08",
+        jiraStatus: "done",
       },
       {
         id: "a3",
@@ -206,14 +206,92 @@ export function createSeedState(): AppState {
         status: "done",
         createdAt: r2Date,
         closedAt: `${addDays(t, -22)}T16:00:00.000Z`,
+        jiraKey: "PIXEL-15",
+        jiraStatus: "done",
       },
       {
         id: "a4",
         retroId: SEED_IDS.retros.r2,
         title: "QA ortamına dokuman yaz",
         ownerId: SEED_IDS.members.ayse,
-        status: "open",
+        status: "in_progress",
         createdAt: r2Date, // 30 gündür açık
+        jiraKey: "PIXEL-21",
+        jiraStatus: "ready_to_test",
+      },
+      {
+        id: "a5",
+        retroId: SEED_IDS.retros.r1,
+        title: "Production hata loglarını Slack #alerts kanalına bağla",
+        ownerId: SEED_IDS.members.mehmet,
+        status: "done",
+        createdAt: `${addDays(t, -58)}T10:00:00.000Z`,
+        closedAt: `${addDays(t, -50)}T16:00:00.000Z`,
+        jiraKey: "PIXEL-05",
+        jiraStatus: "done",
+      },
+      {
+        id: "a6",
+        retroId: SEED_IDS.retros.r1,
+        title: "Yeni üyeler için onboarding checklist",
+        ownerId: SEED_IDS.members.ayse,
+        status: "done",
+        createdAt: `${addDays(t, -55)}T11:00:00.000Z`,
+        closedAt: `${addDays(t, -42)}T15:00:00.000Z`,
+        jiraKey: "PIXEL-09",
+        jiraStatus: "done",
+      },
+      {
+        id: "a7",
+        retroId: SEED_IDS.retros.r1,
+        title: "Demo öncesi smoke test scripti",
+        ownerId: SEED_IDS.members.can,
+        status: "open",
+        createdAt: `${addDays(t, -52)}T09:30:00.000Z`,
+        jiraKey: "PIXEL-11",
+        jiraStatus: "todo",
+      },
+      {
+        id: "a8",
+        retroId: SEED_IDS.retros.r2,
+        title: "Backlog grooming haftalık 30 dk",
+        ownerId: SEED_IDS.members.zeynep,
+        status: "done",
+        createdAt: `${addDays(t, -28)}T13:00:00.000Z`,
+        closedAt: `${addDays(t, -14)}T17:00:00.000Z`,
+        jiraKey: "PIXEL-17",
+        jiraStatus: "done",
+      },
+      {
+        id: "a9",
+        retroId: SEED_IDS.retros.r2,
+        title: "Definition of Done dokumante et",
+        ownerId: SEED_IDS.members.ayse,
+        status: "done",
+        createdAt: `${addDays(t, -26)}T10:00:00.000Z`,
+        closedAt: `${addDays(t, -10)}T11:00:00.000Z`,
+        jiraKey: "PIXEL-14",
+        jiraStatus: "done",
+      },
+      {
+        id: "a10",
+        retroId: SEED_IDS.retros.r2,
+        title: "Sprint planning toplantısı 2 saat sınırı",
+        ownerId: SEED_IDS.members.mehmet,
+        status: "in_progress",
+        createdAt: `${addDays(t, -24)}T09:00:00.000Z`,
+        jiraKey: "PIXEL-18",
+        jiraStatus: "in_progress",
+      },
+      {
+        id: "a11",
+        retroId: SEED_IDS.retros.r2,
+        title: "Hotfix release süreci tek butonla",
+        ownerId: SEED_IDS.members.mehmet,
+        status: "open",
+        createdAt: `${addDays(t, -32)}T10:00:00.000Z`,
+        jiraKey: "PIXEL-19",
+        jiraStatus: "todo",
       },
     ],
     notes: [

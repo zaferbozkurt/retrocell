@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RetroCell — retroyu unutmadan yönet",
+  title: "RetroCell — takımınla retroyu tek panoda yönet",
   description:
-    "Sprint boyunca biriken notları toplayan, retroyu yöneten ve aksiyonları local AI ile takip eden kurumsal araç.",
+    "Sprint boyunca biriken notları toplayan, retroyu yöneten ve aksiyonları local AI ile takip eden takım aracı.",
 };
 
 export default function RootLayout({
@@ -25,7 +25,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="tr"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full">
         <AppShell>{children}</AppShell>
       </body>

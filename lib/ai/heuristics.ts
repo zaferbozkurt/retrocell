@@ -5,7 +5,10 @@ export type SimilarityResult = {
   match: boolean;
   similarItemId?: string;
   reason?: string;
+  flag?: "tczb";
 };
+
+export const TCZB_FLAG = "tczb";
 
 export type VaguenessResult = {
   clear: boolean;
@@ -22,6 +25,22 @@ export function checkSimilarityMock(
   pastItems: RetroItem[],
 ): SimilarityResult {
   const lower = newText.toLowerCase();
+  if (lower.includes(TCZB_FLAG)) {
+    // Demo flag: the user typed the magic token. Match it against the past
+    // code-review item, which has an action (a2) wired in seed via sourceItemId.
+    const target =
+      pastItems.find((i) => i.id === SEED_IDS.tczbItemId) ??
+      pastItems.find((i) => i.text.toLowerCase().includes("code review"));
+    if (target) {
+      return {
+        match: true,
+        similarItemId: target.id,
+        flag: "tczb",
+        reason:
+          "Bu konuyu geçmişte konuştunuz. Geçen sprintteki kart ve buradan çıkan aksiyon aşağıda.",
+      };
+    }
+  }
   if (lower.includes("deploy")) {
     // Prefer the original Sprint 22 deploy item if it exists.
     const target =
