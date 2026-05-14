@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Architecture refactor in progress
+
+We are migrating to a feature-slice architecture. Before any non-trivial change, read [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — it defines the target layout, eleven enforceable rules (R1–R11), the migration roadmap, and a pre-merge checklist.
+
+Repeatable workflows live in [`docs/playbooks/`](./docs/playbooks/):
+- `refactor-route-to-feature` — extract a `app/**/page.tsx` into a `features/<name>/` slice
+- `add-store-mutation` — add an atomic store mutation (R5, R7)
+- `extend-dnd` — add a new DnD payload / drop zone (R8)
+- `audit-render-stability` — find and fix selector instability (R6)
+- `add-ai-check` — add a new AI check route + client + mock fallback (R9)
+
+The "What this app is" / "Architecture" sections below describe the **current** state. Where they conflict with `docs/ARCHITECTURE.md`, the architecture doc is the target — but don't refactor preemptively; follow the phased roadmap.
+
 ## Next.js version warning
 
 This is Next.js **16.2.6** with React **19.2.4** and Tailwind **v4**. APIs, conventions, and file layout differ from older training data. Before writing Next-specific code (route handlers, layouts, server components, etc.), read the relevant guide in `node_modules/next/dist/docs/`. Heed deprecation notices. (`AGENTS.md` carries the canonical version of this warning.)
