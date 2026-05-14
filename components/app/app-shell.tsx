@@ -21,33 +21,6 @@ import {
 } from "@/lib/store";
 import { cn } from "@/lib/cn";
 
-const NAV = [
-  {
-    href: "/board",
-    label: "Retro",
-    icon: ClipboardList,
-    match: (p: string) => p.startsWith("/board"),
-  },
-  {
-    href: "/actions",
-    label: "Aksiyonlar",
-    icon: CheckSquare,
-    match: (p: string) => p.startsWith("/actions"),
-  },
-  {
-    href: "/history",
-    label: "Geçmiş",
-    icon: History,
-    match: (p: string) => p.startsWith("/history"),
-  },
-  {
-    href: "/team",
-    label: "Takım",
-    icon: Users,
-    match: (p: string) => p.startsWith("/team"),
-  },
-];
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   useHydrateStore();
   const pathname = usePathname() ?? "/";
@@ -68,19 +41,48 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const hasSession = !!team && !!member;
 
+  const nav = team
+    ? [
+        {
+          href: `/board/${team.slug}`,
+          label: "Retro",
+          icon: ClipboardList,
+          match: (p: string) => p.startsWith("/board"),
+        },
+        {
+          href: "/actions",
+          label: "Aksiyonlar",
+          icon: CheckSquare,
+          match: (p: string) => p.startsWith("/actions"),
+        },
+        {
+          href: "/history",
+          label: "Geçmiş",
+          icon: History,
+          match: (p: string) => p.startsWith("/history"),
+        },
+        {
+          href: "/team",
+          label: "Takım",
+          icon: Users,
+          match: (p: string) => p.startsWith("/team"),
+        },
+      ]
+    : [];
+
   return (
     <div className="min-h-screen w-full bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <Link
-            href={hasSession ? "/board" : "/"}
+            href={team ? `/board/${team.slug}` : "/"}
             className="flex items-center gap-2"
           >
             <span className="inline-flex size-8 items-center justify-center rounded-md bg-indigo-600 text-white">
               <RotateCcw className="size-4" />
             </span>
             <span className="text-base font-semibold tracking-tight">
-              Retro Tracker
+              RetroCell
             </span>
             {team ? (
               <span className="ml-2 hidden text-sm text-slate-500 sm:inline">
@@ -91,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {hasSession ? (
             <nav className="flex items-center gap-1">
-              {NAV.map(({ href, label, icon: Icon, match }) => {
+              {nav.map(({ href, label, icon: Icon, match }) => {
                 const active = match(pathname);
                 return (
                   <Link
@@ -134,11 +136,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
                 <button
                   onClick={() => {
-                    if (
-                      window.confirm(
-                        "Çıkış yap? Tarayıcıdaki takım bilgisi silinmeyecek; tekrar girebilirsin.",
-                      )
-                    ) {
+                    if (window.confirm("Çıkış yap?")) {
                       store.signOut();
                       router.push("/");
                     }

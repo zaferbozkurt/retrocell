@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Retro Tracker — retroyu unutmadan yönet",
+  title: "RetroCell — takımınla retroyu tek panoda yönet",
   description:
-    "Sprint boyunca biriken notları toplayan, retroyu yöneten ve aksiyonları local AI ile takip eden kurumsal araç.",
+    "Sprint boyunca biriken notları toplayan, retroyu yöneten ve aksiyonları local AI ile takip eden takım aracı.",
 };
 
 export default function RootLayout({
