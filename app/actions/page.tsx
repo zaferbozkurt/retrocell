@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ActionCard } from "@/components/app/action-card";
 import { MemberAvatar } from "@/components/app/member-avatar";
-import { useAppState, useIsHydrated } from "@/lib/store";
+import { useAppState } from "@/lib/store";
 import { isOverdue, isStale } from "@/lib/date";
 import {
   ACTION_STATUS_META,
@@ -46,7 +46,6 @@ export default function ActionsPage() {
 }
 
 function ActionsPageInner() {
-  const hydrated = useIsHydrated();
   const state = useAppState((s) => s);
   const search = useSearchParams();
   const urlFilter = (search.get("filter") as Filter) ?? "all";
@@ -99,10 +98,6 @@ function ActionsPageInner() {
     for (const a of filtered) groups[a.status].push(a);
     return groups;
   }, [filtered]);
-
-  if (!hydrated) {
-    return <div className="px-6 py-10">Loading…</div>;
-  }
 
   const counts = {
     all: state.actions.length,

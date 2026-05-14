@@ -9,7 +9,8 @@ import {
   Workflow,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/cn";
 
 export default function Home() {
   return (
@@ -32,14 +33,15 @@ export default function Home() {
           ones still on the table.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Button asChild size="lg">
-            <Link href="/dashboard">
-              Open the dashboard <ArrowRight />
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href="/retros/new">Start a new retro</Link>
-          </Button>
+          <Link href="/dashboard" className={cn(buttonVariants({ size: "lg" }))}>
+            Open the dashboard <ArrowRight />
+          </Link>
+          <Link
+            href="/retros/new"
+            className={cn(buttonVariants({ size: "lg", variant: "outline" }))}
+          >
+            Start a new retro
+          </Link>
         </div>
       </section>
 
@@ -129,11 +131,15 @@ export default function Home() {
               two retros — so you can see the carry-forward and recurring-theme
               detection in action immediately.
             </p>
-            <Button asChild variant="link" className="mt-2 px-0">
-              <Link href="/insights">
-                See the recurring theme RetroLoop caught <ArrowRight />
-              </Link>
-            </Button>
+            <Link
+              href="/insights"
+              className={cn(
+                buttonVariants({ variant: "link" }),
+                "mt-2 px-0",
+              )}
+            >
+              See the recurring theme RetroLoop caught <ArrowRight />
+            </Link>
           </div>
         </div>
       </section>

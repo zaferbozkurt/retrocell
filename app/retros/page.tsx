@@ -6,20 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MemberStack } from "@/components/app/member-avatar";
-import { useAppState, useIsHydrated } from "@/lib/store";
+import { useAppState } from "@/lib/store";
 import { formatDate, formatRelative } from "@/lib/date";
 
 export default function RetrosPage() {
-  const hydrated = useIsHydrated();
   const state = useAppState((s) => s);
-
-  if (!hydrated) {
-    return (
-      <div className="px-6 py-10 md:px-10">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-      </div>
-    );
-  }
 
   const sorted = [...state.retros].sort((a, b) =>
     (b.createdAt).localeCompare(a.createdAt),

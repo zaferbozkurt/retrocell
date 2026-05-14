@@ -17,26 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ActionCard } from "@/components/app/action-card";
 import { MemberStack } from "@/components/app/member-avatar";
-import { useAppState, useIsHydrated } from "@/lib/store";
+import { useAppState } from "@/lib/store";
 import { formatRelative, isOverdue, isStale } from "@/lib/date";
 import { cn } from "@/lib/cn";
 
 export default function DashboardPage() {
-  const hydrated = useIsHydrated();
   const state = useAppState((s) => s);
-
-  if (!hydrated) {
-    return (
-      <div className="px-6 py-10 md:px-10">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-        <div className="mt-6 grid gap-3 md:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-lg bg-muted" />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   const openActions = state.actions.filter(
     (a) => a.status !== "done" && a.status !== "dropped",

@@ -33,7 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { ActionStatusPill } from "@/components/app/action-status-pill";
 import { MemberAvatar } from "@/components/app/member-avatar";
 import { NudgeDialog } from "@/components/app/nudge-dialog";
-import { store, useAppState, useIsHydrated } from "@/lib/store";
+import { store, useAppState } from "@/lib/store";
 import { formatDate, formatRelative, isOverdue, isStale } from "@/lib/date";
 import {
   ACTION_STATUS_META,
@@ -56,14 +56,12 @@ export default function ActionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const hydrated = useIsHydrated();
   const state = useAppState((s) => s);
   const action = state.actions.find((a) => a.id === id);
   const [nudgeOpen, setNudgeOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [comment, setComment] = useState("");
 
-  if (!hydrated) return <div className="px-6 py-10">Loading…</div>;
   if (!action) {
     return (
       <div className="px-6 py-10">

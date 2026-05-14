@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { MemberAvatar } from "@/components/app/member-avatar";
-import { useAppState, useIsHydrated } from "@/lib/store";
+import { useAppState } from "@/lib/store";
 import { aiInsights } from "@/lib/ai/client";
 import type { RetroInsight } from "@/lib/ai/heuristics";
 import { cn } from "@/lib/cn";
@@ -33,14 +33,12 @@ const KIND_ICON: Record<RetroInsight["kind"], React.ReactNode> = {
 };
 
 export default function InsightsPage() {
-  const hydrated = useIsHydrated();
   const state = useAppState((s) => s);
   const [insights, setInsights] = useState<RetroInsight[]>([]);
   const [source, setSource] = useState<"model" | "heuristic" | null>(null);
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
-    if (!hydrated) return;
     let cancelled = false;
     aiInsights(state.retros, state.retroItems, state.actions, state.members)
       .then((res) => {
@@ -55,11 +53,7 @@ export default function InsightsPage() {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, state.retros, state.retroItems, state.actions, state.members]);
-
-  if (!hydrated) {
-    return <div className="px-6 py-10">Loading…</div>;
-  }
+  }, [state.retros, state.retroItems, state.actions, state.members]);
 
   const closedRetros = state.retros.filter((r) => r.status === "closed");
   const closedIds = new Set(closedRetros.map((r) => r.id));

@@ -26,7 +26,6 @@ import {
   getPreviousRetro,
   store,
   useAppState,
-  useIsHydrated,
 } from "@/lib/store";
 import { formatDate } from "@/lib/date";
 import { COLUMN_META, type ColumnId } from "@/lib/types";
@@ -46,7 +45,6 @@ export default function RetroPage({
 }) {
   const router = useRouter();
   const { id } = use(params);
-  const hydrated = useIsHydrated();
   const state = useAppState((s) => s);
   const retro = state.retros.find((r) => r.id === id);
   const items = state.retroItems.filter((i) => i.retroId === id);
@@ -62,9 +60,6 @@ export default function RetroPage({
     null,
   );
 
-  if (!hydrated) {
-    return <div className="px-6 py-10">Loading…</div>;
-  }
   if (!retro) {
     return (
       <div className="px-6 py-10">

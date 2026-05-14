@@ -23,7 +23,6 @@ import { ActionStatusPill } from "@/components/app/action-status-pill";
 import {
   store,
   useAppState,
-  useIsHydrated,
   getPreviousRetro,
 } from "@/lib/store";
 import { addDays, formatRelative, todayISO } from "@/lib/date";
@@ -34,11 +33,7 @@ type Stage = "setup" | "carry-over" | "review";
 type Decision = "carry" | "drop";
 
 export default function NewRetroPage() {
-  const hydrated = useIsHydrated();
   const state = useAppState((s) => s);
-  if (!hydrated) {
-    return <div className="px-6 py-10">Loading…</div>;
-  }
   return <Form state={state} />;
 }
 
@@ -183,31 +178,32 @@ function Form({ state }: { state: AppState }) {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {state.members.map((m) => {
                   const checked = participantIds.includes(m.id);
+                  const inputId = `participant-${m.id}`;
                   return (
-                    <button
+                    <label
                       key={m.id}
-                      type="button"
-                      onClick={() =>
-                        setParticipantIds((ids) =>
-                          ids.includes(m.id)
-                            ? ids.filter((x) => x !== m.id)
-                            : [...ids, m.id],
-                        )
-                      }
+                      htmlFor={inputId}
                       className={cn(
-                        "flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
+                        "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
                         checked
                           ? "border-primary/50 bg-primary/5"
                           : "hover:bg-accent/60",
                       )}
                     >
                       <Checkbox
+                        id={inputId}
                         checked={checked}
-                        className="pointer-events-none"
+                        onCheckedChange={(v) =>
+                          setParticipantIds((ids) =>
+                            v
+                              ? Array.from(new Set([...ids, m.id]))
+                              : ids.filter((x) => x !== m.id),
+                          )
+                        }
                       />
                       <MemberAvatar member={m} size="xs" withTooltip={false} />
                       <span className="truncate">{m.name.split(" ")[0]}</span>
-                    </button>
+                    </label>
                   );
                 })}
               </div>
