@@ -246,7 +246,7 @@ function BoardView({ team, member }: { team: Team; member: TeamMember }) {
   const activeNotes = teamNotes.filter((n) => !n.movedToRetro);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 md:px-6">
+    <div className="mx-auto max-w-[1400px] px-4 py-6 md:px-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-wider text-slate-500">
@@ -527,6 +527,7 @@ function Board({
 
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <AiNotesColumn actions={teamActions} />
       {cols.map((c) => (
         <BoardColumn
           key={c}
@@ -542,7 +543,6 @@ function Board({
           setHighlight={setHighlight}
         />
       ))}
-      <AiNotesColumn actions={teamActions} />
     </div>
   );
 }
@@ -784,21 +784,22 @@ function BoardColumn({
 
       <form
         onSubmit={onAdd}
-        className="flex items-center gap-1 border-t border-slate-200 px-3 py-2"
+        className="flex items-center gap-2 border-t border-slate-200 px-3 py-2"
       >
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="+ Kart ekle..."
+          placeholder="Kart ekle…"
           disabled={pending}
-          className="flex-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo-400 disabled:opacity-50"
+          className="flex-1 min-w-0 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo-400 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={!draft.trim() || pending}
-          className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-1.5 text-xs font-medium text-white disabled:opacity-30"
+          aria-label="Kart ekle"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Plus className="size-3.5" />
+          <Plus className="size-4" />
         </button>
       </form>
     </section>
@@ -863,6 +864,9 @@ function ItemCard({
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(item.text);
   const editRef = useRef<HTMLTextAreaElement | null>(null);
+  const [promoting, setPromoting] = useState(false);
+  const [actionDraft, setActionDraft] = useState("");
+  const promoteRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -870,6 +874,14 @@ function ItemCard({
       editRef.current?.select();
     }
   }, [editing]);
+
+  useEffect(() => {
+    if (promoting) {
+      setActionDraft(item.text);
+      promoteRef.current?.focus();
+      promoteRef.current?.select();
+    }
+  }, [promoting, item.text]);
 
   const onDragStart = (e: React.DragEvent) => {
     if (editing) {
@@ -900,9 +912,24 @@ function ItemCard({
     setEditing(false);
   };
 
-  const promoteToAction = () => {
-    if (hasAction) return;
-    store.promoteItemToAction(item.id);
+  const openPromoteInput = () => {
+    if (hasAction || promoting) return;
+    setActionDraft(item.text);
+    setPromoting(true);
+  };
+
+  const submitPromote = (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = actionDraft.trim();
+    if (!title) return;
+    store.promoteItemToAction(item.id, title);
+    setPromoting(false);
+    setActionDraft("");
+  };
+
+  const cancelPromote = () => {
+    setPromoting(false);
+    setActionDraft("");
   };
 
   const dimmed = !!highlight && !highlight.has(item.id);
@@ -979,8 +1006,11 @@ function ItemCard({
                 ) : null}
                 {item.column !== "action" && !hasAction ? (
                   <button
-                    onClick={promoteToAction}
-                    className="inline-flex h-5 items-center gap-0.5 rounded px-1.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-50"
+                    onClick={openPromoteInput}
+                    className={cn(
+                      "inline-flex h-5 items-center gap-0.5 rounded px-1.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-50",
+                      promoting && "bg-indigo-50",
+                    )}
                     title="Aksiyona dönüştür"
                   >
                     Aksiyon
@@ -1001,6 +1031,48 @@ function ItemCard({
           </div>
         </div>
       </div>
+
+      {promoting ? (
+        <form
+          onSubmit={submitPromote}
+          className="border-t border-indigo-200 bg-indigo-50/60 px-3 py-2"
+        >
+          <label className="text-[10px] font-medium uppercase tracking-wider text-indigo-700">
+            Aksiyon başlığı
+          </label>
+          <div className="mt-1 flex items-center gap-1">
+            <input
+              ref={promoteRef}
+              value={actionDraft}
+              onChange={(e) => setActionDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  cancelPromote();
+                }
+              }}
+              placeholder="Atılacak somut adım…"
+              className="flex-1 rounded-md border border-indigo-200 bg-white px-2 py-1 text-xs outline-none focus:border-indigo-500"
+            />
+            <button
+              type="submit"
+              disabled={!actionDraft.trim()}
+              className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
+            >
+              Taşı
+              <ArrowRight className="size-3" />
+            </button>
+            <button
+              type="button"
+              onClick={cancelPromote}
+              className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              title="Vazgeç"
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       {item.flagTczb && item.similarReason ? (
         <div className="border-t-2 border-violet-500 bg-violet-50 px-3 py-2 text-[12px] text-violet-900">

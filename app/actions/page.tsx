@@ -29,6 +29,8 @@ const STATUS_CYCLE: Record<ActionStatus, ActionStatus> = {
 
 const TODO_WARNING_DAYS = 30;
 
+const JIRA_ASSIGNEES = ["Samet", "Umutcan", "Zafer", "Nisan"] as const;
+
 export default function ActionsPage() {
   const team = useAppState(getCurrentTeam);
   const sm = useAppState(isScrumMaster);
@@ -291,6 +293,12 @@ function JiraTaskModal({
   const [jiraKey] = useState(
     () => `PIXEL-${String(100 + Math.floor(Math.random() * 900))}`,
   );
+  const [assignee, setAssignee] = useState<string>(() => {
+    const match = JIRA_ASSIGNEES.find(
+      (n) => n.toLowerCase() === ownerName.toLowerCase(),
+    );
+    return match ?? JIRA_ASSIGNEES[0];
+  });
   const today = formatDate(nowISO());
 
   const onCreate = () => {
@@ -352,7 +360,20 @@ function JiraTaskModal({
           <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
             Assignee
           </dt>
-          <dd className="text-slate-900">{ownerName}</dd>
+          <dd>
+            <select
+              value={assignee}
+              onChange={(e) => setAssignee(e.target.value)}
+              disabled={phase !== "draft"}
+              className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-900 outline-none focus:border-indigo-400 disabled:opacity-60"
+            >
+              {JIRA_ASSIGNEES.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </dd>
 
           <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
             Sprint
