@@ -39,6 +39,7 @@ import { cn } from "@/lib/cn";
 
 const ITEM_MIME = "application/x-retro-item";
 const NOTE_MIME = "application/x-retro-note";
+const JIRA_NOTE_MIME = "application/x-jira-note";
 const SHORT_NOTE_THRESHOLD = 50;
 
 export default function BoardBySlugPage({
@@ -547,17 +548,77 @@ function Board({
   );
 }
 
+type JiraNote = {
+  key: string;
+  title: string;
+  status: JiraStatus;
+  syncedAt: string;
+  assignee?: string;
+};
+
+const MOCK_JIRA_NOTES: JiraNote[] = [
+  {
+    key: "PIXEL-04",
+    title: "Sprint planning agenda template",
+    status: "done",
+    syncedAt: "2026-05-08T09:12:00.000Z",
+    assignee: "Samet",
+  },
+  {
+    key: "PIXEL-19",
+    title: "Deploy timeout alert (>2h)",
+    status: "in_progress",
+    syncedAt: "2026-05-13T11:30:00.000Z",
+    assignee: "Umutcan",
+  },
+  {
+    key: "PIXEL-27",
+    title: "PR otomatik atama botu",
+    status: "ready_to_test",
+    syncedAt: "2026-05-12T14:45:00.000Z",
+    assignee: "Zafer",
+  },
+  {
+    key: "PIXEL-31",
+    title: "Daily standup recap özet maili",
+    status: "todo",
+    syncedAt: "2026-05-14T08:05:00.000Z",
+    assignee: "Nisan",
+  },
+  {
+    key: "PIXEL-33",
+    title: "QA ortamı seed reset cron",
+    status: "todo",
+    syncedAt: "2026-05-14T08:40:00.000Z",
+    assignee: "Samet",
+  },
+];
+
 function AiNotesColumn({ actions }: { actions: Action[] }) {
   // "Auto-fed from Jira": every action that has a jiraKey shows up here as a
   // synced Jira issue. The user perceives this as a real-time Jira sync.
-  const jiraActions = useMemo(
+  // Static mock notes are merged in to keep the column populated even before
+  // any team action has been linked to Jira.
+  const liveNotes = useMemo<JiraNote[]>(
     () =>
       actions
         .filter((a) => a.jiraKey && a.jiraStatus)
-        .slice()
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+        .map((a) => ({
+          key: a.jiraKey as string,
+          title: a.title,
+          status: a.jiraStatus as JiraStatus,
+          syncedAt: a.createdAt,
+        })),
     [actions],
   );
+
+  const merged = useMemo<JiraNote[]>(() => {
+    const seen = new Set(liveNotes.map((n) => n.key));
+    const extras = MOCK_JIRA_NOTES.filter((n) => !seen.has(n.key));
+    return [...liveNotes, ...extras].sort((a, b) =>
+      b.syncedAt.localeCompare(a.syncedAt),
+    );
+  }, [liveNotes]);
 
   return (
     <section className="flex flex-col rounded-lg border border-violet-200 bg-white">
@@ -568,7 +629,7 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
           </span>
           AI Notes
           <span className="ml-auto text-xs font-normal text-slate-500">
-            {jiraActions.length}
+            {merged.length}
           </span>
         </h3>
         <p className="mt-0.5 text-xs text-slate-500">
@@ -577,14 +638,12 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
       </div>
 
       <div className="flex-1 space-y-2 px-3 py-3">
-        {jiraActions.length === 0 ? (
+        {merged.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
             Henüz Jira görevi yok.
           </div>
         ) : (
-          jiraActions.map((a) => (
-            <JiraNoteCard key={a.id} action={a} />
-          ))
+          merged.map((n) => <JiraNoteCard key={n.key} note={n} />)
         )}
       </div>
 
@@ -599,14 +658,36 @@ function AiNotesColumn({ actions }: { actions: Action[] }) {
   );
 }
 
-function JiraNoteCard({ action }: { action: Action }) {
-  const status = action.jiraStatus as JiraStatus;
-  const meta = JIRA_STATUS_META[status];
+function JiraNoteCard({ note }: { note: JiraNote }) {
+  const meta = JIRA_STATUS_META[note.status];
+  const [dragging, setDragging] = useState(false);
+
+  const onDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData(
+      JIRA_NOTE_MIME,
+      JSON.stringify({
+        key: note.key,
+        title: note.title,
+        status: note.status,
+      }),
+    );
+    setDragging(true);
+  };
+
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2">
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={() => setDragging(false)}
+      className={cn(
+        "cursor-grab rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 active:cursor-grabbing",
+        dragging && "opacity-50",
+      )}
+    >
       <div className="flex items-center justify-between text-[11px]">
         <span className="font-mono font-semibold text-slate-700">
-          {action.jiraKey}
+          {note.key}
         </span>
         <span
           className={cn(
@@ -619,15 +700,13 @@ function JiraNoteCard({ action }: { action: Action }) {
           {meta.label}
         </span>
       </div>
-      <p className="mt-1 text-sm leading-snug text-slate-900">
-        {action.title}
-      </p>
+      <p className="mt-1 text-sm leading-snug text-slate-900">{note.title}</p>
       <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
         <span className="inline-flex items-center gap-1">
           <Sparkles className="size-3 text-violet-500" />
-          AI yakaladı
+          {note.assignee ? note.assignee : "AI yakaladı"}
         </span>
-        <span>{formatRelative(action.createdAt)}</span>
+        <span>{formatRelative(note.syncedAt)}</span>
       </div>
     </div>
   );
@@ -669,9 +748,10 @@ function BoardColumn({
     const types = e.dataTransfer.types;
     const hasItem = types.includes(ITEM_MIME);
     const hasNote = types.includes(NOTE_MIME);
-    if (!hasItem && (!hasNote || !acceptsNotes)) return;
+    const hasJira = types.includes(JIRA_NOTE_MIME);
+    if (!hasItem && (!(hasNote || hasJira) || !acceptsNotes)) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+    e.dataTransfer.dropEffect = hasItem ? "move" : "copy";
     if (!dragOver) setDragOver(true);
   };
 
@@ -699,6 +779,23 @@ function BoardColumn({
       try {
         const { id } = JSON.parse(notePayload) as { id: string };
         store.moveNoteToRetro(id, retroId, column);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    const jiraPayload = e.dataTransfer.getData(JIRA_NOTE_MIME);
+    if (jiraPayload) {
+      try {
+        const { key, title } = JSON.parse(jiraPayload) as {
+          key: string;
+          title: string;
+        };
+        store.addItem({
+          retroId,
+          column,
+          text: `[${key}] ${title}`,
+        });
       } catch {
         /* ignore */
       }
@@ -877,11 +974,10 @@ function ItemCard({
 
   useEffect(() => {
     if (promoting) {
-      setActionDraft(item.text);
       promoteRef.current?.focus();
       promoteRef.current?.select();
     }
-  }, [promoting, item.text]);
+  }, [promoting]);
 
   const onDragStart = (e: React.DragEvent) => {
     if (editing) {
