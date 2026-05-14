@@ -277,6 +277,33 @@ function BoardColumn({
   const meta = COLUMN_META[column];
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const onDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("application/x-retro-item")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!dragOver) setDragOver(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDragOver(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const payload = e.dataTransfer.getData("application/x-retro-item");
+    if (!payload) return;
+    try {
+      const { id, from } = JSON.parse(payload) as { id: string; from: Column };
+      if (from === column) return;
+      store.moveItem(id, column);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const onAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,9 +337,13 @@ function BoardColumn({
 
   return (
     <section
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       className={cn(
-        "flex flex-col rounded-lg border bg-white",
+        "flex flex-col rounded-lg border bg-white transition-colors",
         meta.border,
+        dragOver && "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-50",
       )}
     >
       <div className={cn("rounded-t-lg border-b px-4 py-3", meta.bg, meta.border)}>
@@ -375,13 +406,31 @@ function ItemCard({ item, allItems }: { item: RetroItem; allItems: RetroItem[] }
     () => (item.similarToItemId ? allItems.find((i) => i.id === item.similarToItemId) : undefined),
     [item.similarToItemId, allItems],
   );
+  const [dragging, setDragging] = useState(false);
 
   const promote = () => {
     store.promoteItemToAction(item.id);
   };
 
+  const onDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(
+      "application/x-retro-item",
+      JSON.stringify({ id: item.id, from: item.column }),
+    );
+    setDragging(true);
+  };
+
   return (
-    <div className="rounded-md border border-slate-200 bg-white">
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={() => setDragging(false)}
+      className={cn(
+        "rounded-md border border-slate-200 bg-white cursor-grab active:cursor-grabbing",
+        dragging && "opacity-50",
+      )}
+    >
       <div className="px-3 py-2">
         <p className="text-sm leading-snug text-slate-900">{item.text}</p>
         <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">

@@ -168,6 +168,13 @@ export const store = {
     }));
   },
 
+  moveItem(id: string, column: Column) {
+    setState((s) => ({
+      ...s,
+      items: s.items.map((i) => (i.id === id ? { ...i, column } : i)),
+    }));
+  },
+
   // Actions
   promoteItemToAction(itemId: string): string | undefined {
     let newId: string | undefined;
