@@ -176,23 +176,57 @@ export const store = {
   },
 
   // Actions
-  promoteItemToAction(itemId: string): string | undefined {
+  promoteItemToAction(itemId: string, title?: string): string | undefined {
     let newId: string | undefined;
     setState((s) => {
       const item = s.items.find((i) => i.id === itemId);
       if (!item) return s;
+      const finalTitle = (title?.trim() || item.text).slice(0, 200);
       newId = uid("action");
       const action: Action = {
         id: newId,
         retroId: item.retroId,
-        title: item.text,
+        title: finalTitle,
         owner: s.currentUser,
         status: "open",
         createdAt: nowISO(),
+        sourceItemId: item.id,
       };
-      return { ...s, actions: [...s.actions, action] };
+      const boardActionItem: RetroItem = {
+        id: uid("item"),
+        retroId: item.retroId,
+        column: "action",
+        text: finalTitle,
+        author: s.currentUser,
+        createdAt: nowISO(),
+        sourceItemId: item.id,
+      };
+      return {
+        ...s,
+        actions: [...s.actions, action],
+        items: [...s.items, boardActionItem],
+      };
     });
     return newId;
+  },
+
+  demoteItemToNote(itemId: string) {
+    setState((s) => {
+      const item = s.items.find((i) => i.id === itemId);
+      if (!item) return s;
+      const note: SprintNote = {
+        id: uid("note"),
+        text: item.text,
+        author: item.author,
+        createdAt: nowISO(),
+        movedToRetro: false,
+      };
+      return {
+        ...s,
+        notes: [note, ...s.notes],
+        items: s.items.filter((i) => i.id !== itemId),
+      };
+    });
   },
 
   updateActionStatus(id: string, to: ActionStatus) {

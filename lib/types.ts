@@ -61,6 +61,7 @@ export type RetroItem = {
   similarReason?: string;
   isVague?: boolean;
   vagueQuestion?: string;
+  sourceItemId?: string;
 };
 
 export type Action = {
@@ -71,6 +72,7 @@ export type Action = {
   status: ActionStatus;
   createdAt: string;
   closedAt?: string;
+  sourceItemId?: string;
 };
 
 export type SprintNote = {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowRight, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { getActiveRetro, store, useAppState } from "@/lib/store";
 import {
   COLUMN_META,
@@ -12,6 +12,9 @@ import {
 import { daysAgo, formatRelative } from "@/lib/date";
 import { aiCheckSimilarity, aiCheckVagueness } from "@/lib/ai/client";
 import { cn } from "@/lib/cn";
+
+const ITEM_MIME = "application/x-retro-item";
+const NOTE_MIME = "application/x-retro-note";
 
 export default function RetroBoardPage() {
   const retro = useAppState(getActiveRetro);
@@ -83,9 +86,9 @@ export default function RetroBoardPage() {
       <div className="mt-5 grid gap-4 lg:grid-cols-[300px_1fr]">
         <NotesSidebar
           notes={activeNotes}
-          onMove={(noteId, column) => store.moveNoteToRetro(noteId, retro.id, column)}
           onDismiss={(id) => store.deleteNote(id)}
           onAdd={(text) => store.addNote(text)}
+          onItemDropped={(itemId) => store.demoteItemToNote(itemId)}
         />
         <Board retroId={retro.id} items={items} pastItems={pastItems} />
       </div>
@@ -128,24 +131,57 @@ function StatCard({
 
 function NotesSidebar({
   notes,
-  onMove,
   onDismiss,
   onAdd,
+  onItemDropped,
 }: {
   notes: SprintNote[];
-  onMove: (noteId: string, column: Column) => void;
   onDismiss: (id: string) => void;
   onAdd: (text: string) => void;
+  onItemDropped: (itemId: string) => void;
 }) {
   const [draft, setDraft] = useState("");
-  const [pickingFor, setPickingFor] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const onDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes(ITEM_MIME)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!dragOver) setDragOver(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDragOver(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    const payload = e.dataTransfer.getData(ITEM_MIME);
+    setDragOver(false);
+    if (!payload) return;
+    e.preventDefault();
+    try {
+      const { id } = JSON.parse(payload) as { id: string };
+      onItemDropped(id);
+    } catch {
+      /* ignore */
+    }
+  };
 
   return (
-    <aside className="rounded-lg border border-slate-200 bg-white">
+    <aside
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      className={cn(
+        "rounded-lg border border-slate-200 bg-white transition-colors",
+        dragOver && "ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-50",
+      )}
+    >
       <div className="border-b border-slate-200 px-4 py-3">
         <h2 className="text-sm font-semibold tracking-tight">Sprint Notları</h2>
         <p className="mt-0.5 text-xs text-slate-500">
-          Sprint içinde &quot;retroda konuşalım&quot; denen şeyler.
+          Sürükleyip kolonlara taşıyabilirsin.
         </p>
       </div>
 
@@ -157,50 +193,11 @@ function NotesSidebar({
         ) : (
           <ul className="space-y-2">
             {notes.map((n) => (
-              <li
+              <NoteRow
                 key={n.id}
-                className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-              >
-                <p className="text-slate-900">{n.text}</p>
-                <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>
-                    {n.author} · {formatRelative(n.createdAt)}
-                  </span>
-                  <button
-                    onClick={() => onDismiss(n.id)}
-                    className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-                    title="Notu sil"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </div>
-                {pickingFor === n.id ? (
-                  <div className="mt-2 flex gap-1">
-                    {(["glad", "sad", "action"] as Column[]).map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => {
-                          onMove(n.id, c);
-                          setPickingFor(null);
-                        }}
-                        className={cn(
-                          "flex-1 rounded px-2 py-1 text-[11px] font-medium",
-                          COLUMN_META[c].chip,
-                        )}
-                      >
-                        {COLUMN_META[c].title}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setPickingFor(n.id)}
-                    className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded bg-indigo-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-indigo-700"
-                  >
-                    Retroya Taşı <ArrowRight className="size-3" />
-                  </button>
-                )}
-              </li>
+                note={n}
+                onDismiss={() => onDismiss(n.id)}
+              />
             ))}
           </ul>
         )}
@@ -233,6 +230,48 @@ function NotesSidebar({
   );
 }
 
+function NoteRow({
+  note,
+  onDismiss,
+}: {
+  note: SprintNote;
+  onDismiss: () => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+
+  const onDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(NOTE_MIME, JSON.stringify({ id: note.id }));
+    setDragging(true);
+  };
+
+  return (
+    <li
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={() => setDragging(false)}
+      className={cn(
+        "rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-grab active:cursor-grabbing",
+        dragging && "opacity-50",
+      )}
+    >
+      <p className="text-slate-900">{note.text}</p>
+      <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+        <span>
+          {note.author} · {formatRelative(note.createdAt)}
+        </span>
+        <button
+          onClick={onDismiss}
+          className="rounded p-0.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+          title="Notu sil"
+        >
+          <X className="size-3" />
+        </button>
+      </div>
+    </li>
+  );
+}
+
 // ─── Kanban board ───────────────────────────────────────────────────────────
 
 function Board({
@@ -245,6 +284,9 @@ function Board({
   pastItems: RetroItem[];
 }) {
   const cols: Column[] = ["glad", "sad", "action"];
+  // When a card with a relationship is hovered, keep only `{itemId, linkedId}` bright.
+  const [highlight, setHighlight] = useState<Set<string> | null>(null);
+
   return (
     <div className="grid gap-3 md:grid-cols-3">
       {cols.map((c) => (
@@ -255,6 +297,8 @@ function Board({
           items={items.filter((i) => i.column === c)}
           pastItems={pastItems}
           allItems={items}
+          highlight={highlight}
+          setHighlight={setHighlight}
         />
       ))}
     </div>
@@ -267,12 +311,16 @@ function BoardColumn({
   items,
   pastItems,
   allItems,
+  highlight,
+  setHighlight,
 }: {
   column: Column;
   retroId: string;
   items: RetroItem[];
   pastItems: RetroItem[];
   allItems: RetroItem[];
+  highlight: Set<string> | null;
+  setHighlight: (s: Set<string> | null) => void;
 }) {
   const meta = COLUMN_META[column];
   const [draft, setDraft] = useState("");
@@ -280,7 +328,8 @@ function BoardColumn({
   const [dragOver, setDragOver] = useState(false);
 
   const onDragOver = (e: React.DragEvent) => {
-    if (!e.dataTransfer.types.includes("application/x-retro-item")) return;
+    const types = e.dataTransfer.types;
+    if (!types.includes(ITEM_MIME) && !types.includes(NOTE_MIME)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     if (!dragOver) setDragOver(true);
@@ -294,14 +343,24 @@ function BoardColumn({
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const payload = e.dataTransfer.getData("application/x-retro-item");
-    if (!payload) return;
-    try {
-      const { id, from } = JSON.parse(payload) as { id: string; from: Column };
-      if (from === column) return;
-      store.moveItem(id, column);
-    } catch {
-      /* ignore */
+    const itemPayload = e.dataTransfer.getData(ITEM_MIME);
+    if (itemPayload) {
+      try {
+        const { id, from } = JSON.parse(itemPayload) as { id: string; from: Column };
+        if (from !== column) store.moveItem(id, column);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    const notePayload = e.dataTransfer.getData(NOTE_MIME);
+    if (notePayload) {
+      try {
+        const { id } = JSON.parse(notePayload) as { id: string };
+        store.moveNoteToRetro(id, retroId, column);
+      } catch {
+        /* ignore */
+      }
     }
   };
 
@@ -317,7 +376,6 @@ function BoardColumn({
       author: "Ayşe",
     });
     setDraft("");
-    // Fire AI checks asynchronously; banners appear when they resolve.
     const [sim, vag] = await Promise.all([
       aiCheckSimilarity(text, pastItems),
       aiCheckVagueness(text),
@@ -371,6 +429,8 @@ function BoardColumn({
                 key={it.id}
                 item={it}
                 allItems={[...allItems, ...pastItems]}
+                highlight={highlight}
+                setHighlight={setHighlight}
               />
             ))
         )}
@@ -401,61 +461,222 @@ function BoardColumn({
 
 // ─── Individual sticky-card ─────────────────────────────────────────────────
 
-function ItemCard({ item, allItems }: { item: RetroItem; allItems: RetroItem[] }) {
+function ItemCard({
+  item,
+  allItems,
+  highlight,
+  setHighlight,
+}: {
+  item: RetroItem;
+  allItems: RetroItem[];
+  highlight: Set<string> | null;
+  setHighlight: (s: Set<string> | null) => void;
+}) {
   const similar = useMemo(
-    () => (item.similarToItemId ? allItems.find((i) => i.id === item.similarToItemId) : undefined),
+    () =>
+      item.similarToItemId
+        ? allItems.find((i) => i.id === item.similarToItemId)
+        : undefined,
     [item.similarToItemId, allItems],
   );
-  const [dragging, setDragging] = useState(false);
 
-  const promote = () => {
-    store.promoteItemToAction(item.id);
-  };
+  // Linked id: either the item this was promoted from, or an action card promoted from this.
+  const linkedId = useMemo(() => {
+    if (item.sourceItemId) return item.sourceItemId;
+    const derived = allItems.find((i) => i.sourceItemId === item.id);
+    return derived?.id;
+  }, [item.id, item.sourceItemId, allItems]);
+
+  // True when an Aksiyon card has been generated from this item.
+  const hasAction =
+    item.column !== "action" &&
+    allItems.some((i) => i.sourceItemId === item.id);
+
+  const [dragging, setDragging] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(item.text);
+  const [actionMode, setActionMode] = useState(false);
+  const [actionDraft, setActionDraft] = useState(item.text);
+  const editRef = useRef<HTMLTextAreaElement | null>(null);
+  const actionRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (editing) {
+      editRef.current?.focus();
+      editRef.current?.select();
+    }
+  }, [editing]);
+
+  useEffect(() => {
+    if (actionMode) actionRef.current?.focus();
+  }, [actionMode]);
 
   const onDragStart = (e: React.DragEvent) => {
+    if (editing || actionMode) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData(
-      "application/x-retro-item",
+      ITEM_MIME,
       JSON.stringify({ id: item.id, from: item.column }),
     );
     setDragging(true);
   };
 
+  const saveEdit = () => {
+    const t = editText.trim();
+    if (!t) {
+      setEditText(item.text);
+      setEditing(false);
+      return;
+    }
+    if (t !== item.text) store.updateItem(item.id, { text: t });
+    setEditing(false);
+  };
+
+  const cancelEdit = () => {
+    setEditText(item.text);
+    setEditing(false);
+  };
+
+  const submitAction = () => {
+    const t = actionDraft.trim();
+    if (!t) return;
+    store.promoteItemToAction(item.id, t);
+    setActionMode(false);
+    setActionDraft(item.text);
+  };
+
+  const dimmed = !!highlight && !highlight.has(item.id);
+
+  const onMouseEnter = () => {
+    if (!linkedId) return;
+    setHighlight(new Set([item.id, linkedId]));
+  };
+  const onMouseLeave = () => {
+    if (highlight) setHighlight(null);
+  };
+
   return (
     <div
-      draggable
+      draggable={!editing && !actionMode}
       onDragStart={onDragStart}
       onDragEnd={() => setDragging(false)}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className={cn(
-        "rounded-md border border-slate-200 bg-white cursor-grab active:cursor-grabbing",
+        "rounded-md border border-slate-200 bg-white transition-opacity",
+        editing || actionMode
+          ? "cursor-text"
+          : "cursor-grab active:cursor-grabbing",
         dragging && "opacity-50",
+        dimmed && "opacity-30",
+        !!linkedId && !dimmed && highlight && "ring-2 ring-indigo-400",
+        hasAction && "border-l-2 border-l-indigo-300",
       )}
     >
       <div className="px-3 py-2">
-        <p className="text-sm leading-snug text-slate-900">{item.text}</p>
+        {editing ? (
+          <textarea
+            ref={editRef}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={saveEdit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                saveEdit();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                cancelEdit();
+              }
+            }}
+            rows={Math.max(2, Math.ceil(editText.length / 36))}
+            className="w-full resize-none rounded border border-indigo-300 bg-white px-2 py-1 text-sm outline-none focus:border-indigo-500"
+          />
+        ) : (
+          <p
+            onDoubleClick={() => setEditing(true)}
+            className="text-sm leading-snug text-slate-900"
+          >
+            {item.text}
+          </p>
+        )}
+
         <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
           <span>
             {item.author} · {formatRelative(item.createdAt)}
           </span>
-          <div className="flex items-center gap-1">
-            {item.column !== "action" ? (
-              <button
-                onClick={promote}
-                className="rounded px-1.5 py-0.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-50"
-                title="Aksiyona dönüştür"
-              >
-                → Aksiyon
-              </button>
+          <div className="flex items-center gap-0.5">
+            {!editing && !actionMode ? (
+              <>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  title="Düzenle"
+                >
+                  <Pencil className="size-3" />
+                </button>
+                {item.column !== "action" ? (
+                  <button
+                    onClick={() => {
+                      setActionDraft(item.text);
+                      setActionMode(true);
+                    }}
+                    className="rounded px-1.5 py-0.5 text-[11px] font-medium text-indigo-700 hover:bg-indigo-50"
+                    title="Aksiyona dönüştür"
+                  >
+                    → Aksiyon
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => store.deleteItem(item.id)}
+                  className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  title="Sil"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              </>
             ) : null}
-            <button
-              onClick={() => store.deleteItem(item.id)}
-              className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              title="Sil"
-            >
-              <Trash2 className="size-3" />
-            </button>
           </div>
         </div>
+
+        {actionMode ? (
+          <div className="mt-2 flex items-center gap-1">
+            <input
+              ref={actionRef}
+              value={actionDraft}
+              onChange={(e) => setActionDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitAction();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  setActionMode(false);
+                }
+              }}
+              placeholder="Aksiyon başlığı..."
+              className="flex-1 rounded border border-indigo-300 bg-white px-2 py-1 text-xs outline-none focus:border-indigo-500"
+            />
+            <button
+              onClick={submitAction}
+              disabled={!actionDraft.trim()}
+              className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
+              title="Aksiyon oluştur"
+            >
+              <Check className="size-3" /> Ekle
+            </button>
+            <button
+              onClick={() => setActionMode(false)}
+              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              title="İptal"
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {item.similarReason ? (
